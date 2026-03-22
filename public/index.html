@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -119,39 +119,112 @@
     .auth-btn:hover {
       transform: scale(1.05);
     }
-   
-    <!DOCTYPE html>
-<html>
-  <head>
-    <title>Subscribe to a cool new product</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://js.stripe.com/clover/stripe.js"></script>
-  </head>
-  <body>
-    <section>
-      <div class="product">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="16px" viewBox="0 0 14 16" version="1.1">
-            <defs/>
-            <g id="Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
-                    <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow"/>
-                </g>
-            </g>
-        </svg>
-        <div class="description">
-          <h3>Starter Plan</h3>
-          <h5>$19.99 / month</h5>
-        </div>
-      </div>
-      <form action="/create-checkout-session" method="POST">
-        <!-- Add a hidden field with the lookup_key of your Price -->
-        <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
-        <button id="checkout-and-portal-button" type="submit">Checkout</button>
-      </form>
-    </section>
-  </body>
-</html>
-   
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal {
+      background: #003594;
+      border: 3px solid #FFEB43;
+      border-radius: 14px;
+      padding: 2rem 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    .modal h2 {
+      margin: 0 0 1.5rem;
+      color: #FFEB43;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.8rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #FFEB43;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #FFEB43;
+      margin-bottom: 0.3rem;
+      margin-top: 1rem;
+    }
+    .modal label:first-of-type { margin-top: 0; }
+    .modal input {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 1rem;
+      font-family: Arial, sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal input:focus { border-color: #fff; }
+    .modal input::placeholder { color: rgba(255,255,255,0.45); }
+    .modal-submit {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.85rem;
+      background: #FFEB43;
+      color: #003594;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .modal-submit:hover { transform: scale(1.03); background: #ffe000; }
+    .modal-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .modal-msg {
+      margin-top: 1rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      display: none;
+    }
+    .modal-msg.error { background: rgba(238,39,55,0.25); border: 1px solid #EE2737; color: #ffaaaa; }
+    .modal-msg.success { background: rgba(13,104,38,0.3); border: 1px solid #0D6826; color: #aaffbb; }
+    .modal-switch {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .modal-switch a {
+      color: #FFEB43;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
     .moon-star { position: absolute; top: 10px; right: 10px; font-size: 1.8rem; z-index: 2; }
    
     .app-wrapper {
@@ -464,9 +537,10 @@
    
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
-    <div class="auth-block">
-      <button class="auth-btn" onclick="document.getElementById('payment-btn').style.display='block'; alert('Login modal would open')">Log In</button>
-      <button class="auth-btn" onclick="alert('Sign Up modal would open')">Sign Up</button>
+    <div class="auth-block" id="auth-block">
+      <button class="auth-btn" id="login-btn" onclick="openModal('login-modal')">Log In</button>
+      <button class="auth-btn" id="signup-btn" onclick="openModal('signup-modal')">Sign Up</button>
+      <button class="auth-btn" id="logout-btn" style="display:none" onclick="doLogout()">Log Out</button>
     </div>
    
     <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')">
@@ -514,6 +588,46 @@
   <div id="chat-bar">
     <input type="text" id="chat-input" placeholder="Join the chat..." />
     <button id="chat-send">Send</button>
+  </div>
+
+  <!-- ── Login Modal ── -->
+  <div class="modal-overlay" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('login-modal')" aria-label="Close">✕</button>
+      <h2 id="login-title">🌙 Log In</h2>
+      <form id="login-form" novalidate>
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" name="username" placeholder="your_username" autocomplete="username" required />
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" required />
+        <button type="submit" class="modal-submit" id="login-submit">Log In</button>
+        <div class="modal-msg" id="login-msg"></div>
+      </form>
+      <div class="modal-switch">Don't have an account? <a onclick="switchModal('login-modal','signup-modal')">Sign Up</a></div>
+    </div>
+  </div>
+
+  <!-- ── Sign Up Modal ── -->
+  <div class="modal-overlay" id="signup-modal" role="dialog" aria-modal="true" aria-labelledby="signup-title">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('signup-modal')" aria-label="Close">✕</button>
+      <h2 id="signup-title">✨ Sign Up</h2>
+      <form id="signup-form" novalidate>
+        <label for="signup-email">Email</label>
+        <input type="email" id="signup-email" name="email" placeholder="you@example.com" autocomplete="email" required />
+        <label for="signup-username">Username <span style="font-weight:normal;color:rgba(255,255,255,0.6)">(3–20 chars)</span></label>
+        <input type="text" id="signup-username" name="username" placeholder="night_owl_42" autocomplete="username" minlength="3" maxlength="20" required />
+        <label for="signup-password">Password <span style="font-weight:normal;color:rgba(255,255,255,0.6)">(min 8 chars)</span></label>
+        <input type="password" id="signup-password" name="password" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+        <label for="signup-age">Age <span style="font-weight:normal;color:rgba(255,255,255,0.6)">(18+)</span></label>
+        <input type="number" id="signup-age" name="age" placeholder="25" min="18" max="120" required />
+        <label for="signup-location">Location <span style="font-weight:normal;color:rgba(255,255,255,0.6)">(optional)</span></label>
+        <input type="text" id="signup-location" name="location" placeholder="Red Deer, AB" autocomplete="address-level2" />
+        <button type="submit" class="modal-submit" id="signup-submit">Create Account</button>
+        <div class="modal-msg" id="signup-msg"></div>
+      </form>
+      <div class="modal-switch">Already have an account? <a onclick="switchModal('signup-modal','login-modal')">Log In</a></div>
+    </div>
   </div>
 
   <script>
@@ -676,6 +790,196 @@
     };
 
     renderProfiles();
+
+    // ── Modal helpers ──────────────────────────────────────────────
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      document.body.style.overflow = '';
+      clearModalMsg(id === 'login-modal' ? 'login-msg' : 'signup-msg');
+    }
+
+    function switchModal(fromId, toId) {
+      closeModal(fromId);
+      openModal(toId);
+    }
+
+    // Close on backdrop click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+      }
+    });
+
+    function showModalMsg(msgId, text, type) {
+      const el = document.getElementById(msgId);
+      el.textContent = text;
+      el.className = 'modal-msg ' + type;
+      el.style.display = 'block';
+    }
+
+    function clearModalMsg(msgId) {
+      const el = document.getElementById(msgId);
+      el.style.display = 'none';
+      el.textContent = '';
+      el.className = 'modal-msg';
+    }
+
+    // ── Auth state ─────────────────────────────────────────────────
+    let currentUser = null;
+
+    function updateAuthUI(user) {
+      currentUser = user;
+      const loginBtn  = document.getElementById('login-btn');
+      const signupBtn = document.getElementById('signup-btn');
+      const logoutBtn = document.getElementById('logout-btn');
+      if (user) {
+        loginBtn.style.display  = 'none';
+        signupBtn.style.display = 'none';
+        logoutBtn.style.display = '';
+        logoutBtn.textContent   = `👋 ${user.username}  ·  Log Out`;
+      } else {
+        loginBtn.style.display  = '';
+        signupBtn.style.display = '';
+        logoutBtn.style.display = 'none';
+      }
+    }
+
+    // Check existing session on page load
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
+        if (res.ok) {
+          const user = await res.json();
+          updateAuthUI(user);
+        }
+      } catch (_) { /* not logged in */ }
+    })();
+
+    // ── Login form ─────────────────────────────────────────────────
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearModalMsg('login-msg');
+      const btn = document.getElementById('login-submit');
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          updateAuthUI({ username: data.username });
+          closeModal('login-modal');
+          document.getElementById('login-form').reset();
+          showToast(`🌙 Welcome back, ${data.username}!`);
+        } else {
+          showModalMsg('login-msg', data.error || 'Login failed. Please try again.', 'error');
+        }
+      } catch (err) {
+        showModalMsg('login-msg', 'Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    });
+
+    // ── Sign Up form ───────────────────────────────────────────────
+    document.getElementById('signup-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearModalMsg('signup-msg');
+      const btn = document.getElementById('signup-submit');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      const email    = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const age      = parseInt(document.getElementById('signup-age').value, 10);
+      const location = document.getElementById('signup-location').value.trim();
+
+      if (age < 18) {
+        showModalMsg('signup-msg', 'You must be 18 or older to join.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ email, username, password, age, location: location || undefined }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showModalMsg('signup-msg', '🎉 Account created! Logging you in…', 'success');
+          document.getElementById('signup-form').reset();
+
+          // Auto-login after successful registration
+          setTimeout(async () => {
+            try {
+              const loginRes = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ username, password }),
+              });
+              const loginData = await loginRes.json();
+              if (loginRes.ok && loginData.success) {
+                updateAuthUI({ username: loginData.username });
+                closeModal('signup-modal');
+                showToast(`✨ Welcome to Central Alberta After Dark, ${loginData.username}!`);
+              } else {
+                closeModal('signup-modal');
+                openModal('login-modal');
+                showModalMsg('login-msg', 'Account created! Please log in.', 'success');
+              }
+            } catch (_) {
+              closeModal('signup-modal');
+              openModal('login-modal');
+            }
+          }, 1200);
+        } else {
+          showModalMsg('signup-msg', data.error || 'Registration failed. Please try again.', 'error');
+        }
+      } catch (err) {
+        showModalMsg('signup-msg', 'Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+
+    // ── Logout ─────────────────────────────────────────────────────
+    async function doLogout() {
+      try {
+        await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch (_) { /* ignore */ }
+      updateAuthUI(null);
+      showToast('👋 Logged out. See you tonight!');
+    }
   </script>
 </body>
 </html>
