@@ -1,0 +1,681 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Central Alberta After Dark</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-shadow: none !important;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #003594 url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=60&w=2000') no-repeat center center fixed;
+      background-size: cover;
+      background-position: bottom;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, transparent 25%, rgba(0,53,148,0.7) 50%, transparent 75%);
+      z-index: -2;
+    }
+   
+    header {
+      background: linear-gradient(135deg, rgba(0,53,148,0.95), rgba(13,54,146,0.95));
+      color: #FFEB43;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      position: relative;
+      min-height: 180px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      z-index: 1;
+      border-bottom: 3px solid #FFEB43;
+    }
+   
+    .flag {
+      width: 240px;
+      height: auto;
+      border: 3px solid #FFEB43;
+      flex-shrink: 0;
+      display: block;
+    }
+   
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      flex: 1;
+      max-width: 600px;
+    }
+   
+    header h1 {
+      margin: 0;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 4rem;
+      font-weight: normal;
+      color: #FFEB43;
+      letter-spacing: 2px;
+    }
+    header .central {
+      font-size: 3.5rem;
+      font-weight: normal;
+      margin: 0;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      color: #FFEB43;
+    }
+    .age-banner {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #003594;
+      margin-top: 0.5rem;
+      background: #FFEB43;
+      padding: 0.3rem 1rem;
+      border-radius: 8px;
+      display: inline-block;
+      border: 2px solid #FFEB43;
+      font-family: Arial, sans-serif;
+    }
+    header p {
+      font-size: 1.1rem;
+      margin-top: 0.5rem;
+      max-width: 100%;
+    }
+   
+    .auth-block {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .auth-btn {
+      background: #FFEB43;
+      color: #003594;
+      border: 2px solid #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      transition: transform 0.2s;
+    }
+    .auth-btn:hover {
+      transform: scale(1.05);
+    }
+   
+    <!DOCTYPE html>
+<html>
+  <head>
+    <title>Subscribe to a cool new product</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.stripe.com/clover/stripe.js"></script>
+  </head>
+  <body>
+    <section>
+      <div class="product">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="16px" viewBox="0 0 14 16" version="1.1">
+            <defs/>
+            <g id="Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
+                    <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow"/>
+                </g>
+            </g>
+        </svg>
+        <div class="description">
+          <h3>Starter Plan</h3>
+          <h5>$19.99 / month</h5>
+        </div>
+      </div>
+      <form action="/create-checkout-session" method="POST">
+        <!-- Add a hidden field with the lookup_key of your Price -->
+        <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
+        <button id="checkout-and-portal-button" type="submit">Checkout</button>
+      </form>
+    </section>
+  </body>
+</html>
+   
+    .moon-star { position: absolute; top: 10px; right: 10px; font-size: 1.8rem; z-index: 2; }
+   
+    .app-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      padding: 2rem;
+      gap: 3rem;
+      position: relative;
+    }
+   
+    .left-sidebar, .right-sidebar {
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+    }
+   
+    .sidebar-promote {
+      width: 100%;
+      padding: 1.5rem 1rem;
+      background: #003594;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+      color: #fff;
+    }
+    .sidebar-promote:hover {
+      transform: scale(1.02);
+      background: #0047ab;
+    }
+    .sidebar-promote h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #FFEB43;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+    .sidebar-promote ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .sidebar-promote li::before {
+      content: "✨ ";
+      color: #FFEB43;
+    }
+   
+    .advertise-card {
+      width: 100%;
+      padding: 1rem;
+      background: #002a6e;
+      border: 2px dashed #FFEB43;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #FFEB43;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+    .advertise-card:hover {
+      background: #003594;
+      border-style: solid;
+    }
+   
+    .main-content {
+      flex: 1;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+   
+    .filter-card {
+      width: 100%;
+      background: #003594;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    .filter-card:hover {
+      background: #0047ab;
+      transform: translateX(5px);
+    }
+    .filter-card.active {
+      background: #FFEB43;
+      color: #003594;
+    }
+    .filter-card.locked {
+      background: #002a6e;
+      border-style: dashed;
+      opacity: 0.8;
+    }
+   
+    .profile-row {
+      background: #003594;
+      border: 2px solid #FFEB43;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-height: 140px;
+      transition: transform 0.2s;
+    }
+    .profile-row:hover {
+      transform: translateY(-3px);
+      border-color: #fff;
+    }
+    .thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid #FFEB43;
+      background: #BBBCBC;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .info { flex: 1; min-width: 200px; }
+    .status-lights {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.3rem;
+    }
+    .online { background: #0D6826; }
+    .offline { background: #666; }
+    .in-radius { background: #0D6826; }
+    .out-radius { background: #EE2737; }
+   
+    .name-age {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #FFEB43;
+      margin-bottom: 0.2rem;
+      font-family: Arial, sans-serif;
+      letter-spacing: 0.5px;
+    }
+    .location {
+      font-size: 0.9rem;
+      color: #ccc;
+      margin-bottom: 0.3rem;
+    }
+    .interests {
+      font-size: 1.2rem;
+      color: #FFEB43;
+      margin-left: 0.5rem;
+    }
+    .bio-teaser {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      margin-top: 0.5rem;
+      color: #fff;
+    }
+   
+    .buttons {
+      display: flex;
+      gap: 0.8rem;
+      flex-shrink: 0;
+      margin-left: auto;
+      align-self: center;
+    }
+    .like-btn {
+      background: #0D6826;
+      color: #fff;
+      border: 2px solid #FFEB43;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+    .pass-btn {
+      background: #EE2737;
+      color: #fff;
+      border: 2px solid #FFEB43;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+    .like-btn, .pass-btn {
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .like-btn:hover { transform: scale(1.05); background: #158f38; }
+    .pass-btn:hover { transform: scale(1.05); background: #ff4444; }
+    .like-btn:disabled { background: #666; opacity: 0.5; cursor: not-allowed; }
+   
+    #chat-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #003594;
+      border-top: 3px solid #FFEB43;
+      padding: 0.8rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+    #chat-input {
+      flex: 1;
+      padding: 0.8rem;
+      border: 2px solid #FFEB43;
+      border-radius: 25px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 1rem;
+      font-family: Arial, sans-serif;
+    }
+    #chat-send {
+      background: #FFEB43;
+      color: #003594;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+    }
+   
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #FFEB43;
+      color: #003594;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      display: none;
+      z-index: 100;
+      border: 3px solid #fff;
+      font-size: 1.1rem;
+    }
+   
+    .empty-feed {
+      text-align: center;
+      padding: 3rem;
+      background: #003594;
+      border: 2px dashed #FFEB43;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-family: Arial, sans-serif;
+    }
+   
+    @media (max-width: 1200px) {
+      .app-wrapper { flex-direction: column; }
+      .left-sidebar, .right-sidebar {
+        width: 100%;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      .sidebar-promote, .advertise-card, .filter-card { flex: 1; min-width: 200px; }
+      .flag { width: 120px; }
+    }
+   
+    @media (max-width: 800px) {
+      header { flex-direction: column; gap: 1rem; padding: 1rem; }
+      .flag { width: 80px; }
+      header h1 { font-size: 2.5rem; }
+      header .central { font-size: 2rem; }
+      .auth-block { position: static; margin-top: 1rem; }
+      .payment-block { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+ 
+  <header>
+    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
+   
+    <div class="title-group">
+      <h1 class="central">Central</h1>
+      <h1>ALBERTA AFTER DARK</h1>
+      <div class="age-banner">18+ ONLY – Adult Community</div>
+      <p>Central Alberta night owls, shift workers, and anyone who thinks 2am is prime time 🌙✨</p>
+    </div>
+   
+    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
+   
+    <div class="auth-block">
+      <button class="auth-btn" onclick="document.getElementById('payment-btn').style.display='block'; alert('Login modal would open')">Log In</button>
+      <button class="auth-btn" onclick="alert('Sign Up modal would open')">Sign Up</button>
+    </div>
+   
+    <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')">
+      🔒 Verify & Subscribe
+    </div>
+   
+    <div class="moon-star">🌙</div>
+  </header>
+
+  <div class="app-wrapper">
+    <aside class="left-sidebar">
+      <div class="sidebar-promote" onclick="alert('Dashboard: Upgrade to Night Owl Premium $9.99/mo')">
+        <h3>Unlock Night Owl Perks</h3>
+        <ul>
+          <li>See who's online now</li>
+          <li>Filter by radius</li>
+          <li>No ads</li>
+          <li>Priority likes</li>
+        </ul>
+        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; font-weight: bold;">$19.99/mo →</div>
+      </div>
+     
+      <div class="advertise-card" onclick="alert('Contact: advertise@centralalbertaafterdark.ca')">
+        <div style="font-size: 1.5rem;">📢</div>
+        <div>Advertise Here</div>
+        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="profiles-container">
+      <!-- Profiles injected here by JavaScript -->
+    </main>
+
+    <aside class="right-sidebar">
+      <div class="filter-card active" onclick="setFilter('all')">All Night Owls</div>
+      <div class="filter-card" onclick="setFilter('online')">Up Late. 🌙</div>
+      <div class="filter-card" onclick="setFilter('nearby')">Coffee Time ☕⌚</div>
+      <div class="filter-card locked" onclick="alert('Premium required: Road Trip')">🔒 Road Trip 🛣️</div>
+      <div class="filter-card locked" onclick="alert('Premium required: Fishing Buddy')">🔒 Fishing Buddy 🎣⛵</div>
+      <div class="filter-card locked" onclick="alert('Premium required: Hit the Pub')">🔒 Hit the Pub? 🍺</div>
+      <div class="filter-card locked" onclick="alert('Premium required: Fur Parents')">🔒 Fur Parents 🐾</div>
+    </aside>
+  </div>
+
+  <div id="chat-bar">
+    <input type="text" id="chat-input" placeholder="Join the chat..." />
+    <button id="chat-send">Send</button>
+  </div>
+
+  <script>
+    // ALL PROFILES - COMPLETE DATA
+    const profiles = [
+      {
+        id: 1,
+        name: "Wildcat",
+        age: 48,
+        location: "Medicine Hat",
+        distance: 12,
+        bio: "Scaffold ho by day, beer philosopher by night. Doesn't sleep, doesn't eat, lives off beer. Looking for someone who gets the night shift life.",
+        interests: "🛢️🍺🌙",
+        image: "https://placehold.co/80x80/333/fff?text=W",
+        online: true,
+        inRadius: true
+      },
+      {
+        id: 2,
+        name: "NightNurse",
+        age: 34,
+        location: "Red Deer",
+        distance: 45,
+        bio: "ICU nurse on nights. Coffee is my blood type. Looking for sunrise breakfasts and someone to share the quiet hours with.",
+        interests: "☕🏥🌅",
+        image: "https://placehold.co/80x80/880e4f/fff?text=N",
+        online: true,
+        inRadius: true
+      },
+      {
+        id: 3,
+        name: "LongHaulLisa",
+        age: 29,
+        location: "Lacombe",
+        distance: 78,
+        bio: "Hauling between Edmonton and Calgary. Home every other weekend. Looking for someone to warm the cab and the heart.",
+        interests: "🚛🎶🏕️",
+        image: "https://placehold.co/80x80/e65100/fff?text=L",
+        online: false,
+        inRadius: false
+      },
+      {
+        id: 4,
+        name: "RigRoughneck",
+        age: 31,
+        location: "Camrose",
+        distance: 92,
+        bio: "Two weeks on, two weeks off. Making bank but lonely. Let's hit Calgary for steaks when I'm back.",
+        interests: "⚙️💰🥩",
+        image: "https://placehold.co/80x80/1b5e20/fff?text=R",
+        online: true,
+        inRadius: false
+      },
+      {
+        id: 5,
+        name: "SecuritySam",
+        age: 41,
+        location: "Stettler",
+        distance: 34,
+        bio: "Night security at the mall. I watch cameras while watching Netflix. Seeking someone for quiet nights and loud weekends.",
+        interests: "📺🎮🍳",
+        image: "https://placehold.co/80x80/4a148c/fff?text=S",
+        online: false,
+        inRadius: true
+      }
+    ];
+
+    let currentFilter = 'all';
+    let likedProfiles = JSON.parse(localStorage.getItem('caad_likes') || '[]');
+    let passedProfiles = JSON.parse(localStorage.getItem('caad_passes') || '[]');
+    let matches = JSON.parse(localStorage.getItem('caad_matches') || '[]');
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    function renderProfiles() {
+      const container = document.getElementById('profiles-container');
+      container.innerHTML = '';
+     
+      let visible = profiles.filter(p => !passedProfiles.includes(p.id));
+     
+      if (currentFilter === 'online') visible = visible.filter(p => p.online);
+      else if (currentFilter === 'nearby') visible = visible.filter(p => p.inRadius);
+     
+      if (visible.length === 0) {
+        container.innerHTML = '<div class="empty-feed">No more night owls in this filter. Try "All Night Owls"!</div>';
+        return;
+      }
+     
+      visible.forEach(p => {
+        const isLiked = likedProfiles.includes(p.id);
+        const isMatch = matches.includes(p.id);
+       
+        const row = document.createElement('div');
+        row.className = 'profile-row';
+        row.innerHTML = `
+          <img src="${p.image}" alt="${p.name}" class="thumbnail" onerror="this.src='https://placehold.co/80x80/666/fff?text=?'">
+          <div class="info">
+            <div class="name-age">${p.name}, ${p.age} – ${p.location} <span class="interests">${p.interests}</span></div>
+            <div class="location">${p.distance}km away</div>
+            <div class="status-lights">
+              <span><span class="status-dot ${p.online ? 'online' : 'offline'}"></span> ${p.online ? 'Online' : 'Offline'}</span>
+              <span><span class="status-dot ${p.inRadius ? 'in-radius' : 'out-radius'}"></span> ${p.inRadius ? 'In Radius' : 'Far Out'}</span>
+            </div>
+            <div class="bio-teaser">${p.bio}</div>
+          </div>
+          <div class="buttons">
+            <button class="pass-btn" onclick="passProfile(${p.id})">❌ Pass</button>
+            <button class="like-btn" onclick="likeProfile(${p.id})" ${isLiked ? 'disabled' : ''}>${isLiked ? (isMatch ? '💬 Message' : '✓ Liked') : '❤️ Like'}</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function setFilter(type) {
+      currentFilter = type;
+      document.querySelectorAll('.right-sidebar .filter-card').forEach(f => f.classList.remove('active'));
+      event.target.classList.add('active');
+      renderProfiles();
+    }
+
+    function likeProfile(id) {
+      if (likedProfiles.includes(id)) return;
+      likedProfiles.push(id);
+      localStorage.setItem('caad_likes', JSON.stringify(likedProfiles));
+     
+      if (Math.random() > 0.6) {
+        matches.push(id);
+        localStorage.setItem('caad_matches', JSON.stringify(matches));
+        const p = profiles.find(x => x.id === id);
+        showToast(`🎉 MATCH! You and ${p.name} liked each other!`);
+      } else {
+        showToast(`❤️ Liked! Waiting for them to like you back...`);
+      }
+      renderProfiles();
+    }
+
+    function passProfile(id) {
+      passedProfiles.push(id);
+      localStorage.setItem('caad_passes', JSON.stringify(passedProfiles));
+      renderProfiles();
+    }
+
+    document.getElementById('chat-send').addEventListener('click', () => {
+      const input = document.getElementById('chat-input');
+      if (input.value.trim()) {
+        showToast(`Chat: ${input.value}`);
+        input.value = '';
+      }
+    });
+
+    window.reset = () => {
+      localStorage.clear();
+      location.reload();
+    };
+
+    renderProfiles();
+  </script>
+</body>
+</html>
