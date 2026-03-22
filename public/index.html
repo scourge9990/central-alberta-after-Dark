@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -119,39 +119,110 @@
     .auth-btn:hover {
       transform: scale(1.05);
     }
-   
-    <!DOCTYPE html>
-<html>
-  <head>
-    <title>Subscribe to a cool new product</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://js.stripe.com/clover/stripe.js"></script>
-  </head>
-  <body>
-    <section>
-      <div class="product">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="16px" viewBox="0 0 14 16" version="1.1">
-            <defs/>
-            <g id="Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
-                    <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow"/>
-                </g>
-            </g>
-        </svg>
-        <div class="description">
-          <h3>Starter Plan</h3>
-          <h5>$19.99 / month</h5>
-        </div>
-      </div>
-      <form action="/create-checkout-session" method="POST">
-        <!-- Add a hidden field with the lookup_key of your Price -->
-        <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
-        <button id="checkout-and-portal-button" type="submit">Checkout</button>
-      </form>
-    </section>
-  </body>
-</html>
-   
+
+    /* ── Auth Modals ─────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #003594;
+      border: 3px solid #FFEB43;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    .modal h2 {
+      margin: 0 0 1.2rem;
+      color: #FFEB43;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.8rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #FFEB43;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+      color: #ccc;
+    }
+    .modal input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      font-family: Arial, sans-serif;
+      margin-bottom: 1rem;
+    }
+    .modal input:focus { outline: none; border-color: #fff; }
+    .modal-submit {
+      width: 100%;
+      padding: 0.8rem;
+      background: #FFEB43;
+      color: #003594;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .modal-submit:hover { opacity: 0.9; }
+    .modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-footer {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #ccc;
+    }
+    .modal-footer a {
+      color: #FFEB43;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .modal-error {
+      background: rgba(238,39,55,0.2);
+      border: 1px solid #EE2737;
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .modal-success {
+      background: rgba(13,104,38,0.25);
+      border: 1px solid #0D6826;
+      border-radius: 6px;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      display: none;
+      line-height: 1.5;
+    }
     .moon-star { position: absolute; top: 10px; right: 10px; font-size: 1.8rem; z-index: 2; }
    
     .app-wrapper {
@@ -464,9 +535,11 @@
    
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
-    <div class="auth-block">
-      <button class="auth-btn" onclick="document.getElementById('payment-btn').style.display='block'; alert('Login modal would open')">Log In</button>
-      <button class="auth-btn" onclick="alert('Sign Up modal would open')">Sign Up</button>
+    <div class="auth-block" id="auth-block">
+      <button class="auth-btn" id="btn-login" onclick="openModal('modal-login')">Log In</button>
+      <button class="auth-btn" id="btn-signup" onclick="openModal('modal-signup')">Sign Up</button>
+      <span id="auth-user" style="display:none; color:#FFEB43; font-weight:bold; font-family:Arial,sans-serif; font-size:0.9rem; align-items:center; gap:0.5rem;"></span>
+      <button class="auth-btn" id="btn-logout" style="display:none;" onclick="doLogout()">Log Out</button>
     </div>
    
     <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')">
@@ -676,6 +749,243 @@
     };
 
     renderProfiles();
+
+    // ── Auth state ──────────────────────────────────────────────────────────
+    async function checkAuthState() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const user = await res.json();
+          setLoggedIn(user.username);
+        }
+      } catch (_) {}
+    }
+
+    function setLoggedIn(username) {
+      document.getElementById('btn-login').style.display = 'none';
+      document.getElementById('btn-signup').style.display = 'none';
+      const authUser = document.getElementById('auth-user');
+      authUser.textContent = `👤 ${username}`;
+      authUser.style.display = 'inline-flex';
+      document.getElementById('btn-logout').style.display = 'inline-block';
+    }
+
+    function setLoggedOut() {
+      document.getElementById('btn-login').style.display = 'inline-block';
+      document.getElementById('btn-signup').style.display = 'inline-block';
+      document.getElementById('auth-user').style.display = 'none';
+      document.getElementById('btn-logout').style.display = 'none';
+    }
+
+    async function doLogout() {
+      await fetch('/api/logout', { method: 'POST' });
+      setLoggedOut();
+      showToast('Logged out. See you tonight! 🌙');
+    }
+
+    // ── Modal helpers ───────────────────────────────────────────────────────
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      // Clear errors/success messages
+      document.querySelectorAll(`#${id} .modal-error, #${id} .modal-success`).forEach(el => {
+        el.style.display = 'none';
+        el.textContent = '';
+      });
+    }
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    function showModalError(formId, msg) {
+      const el = document.querySelector(`#${formId} .modal-error`);
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+    function showModalSuccess(formId, msg) {
+      const errEl = document.querySelector(`#${formId} .modal-error`);
+      if (errEl) errEl.style.display = 'none';
+      const el = document.querySelector(`#${formId} .modal-success`);
+      if (el) { el.innerHTML = msg; el.style.display = 'block'; }
+    }
+
+    // ── Login form ──────────────────────────────────────────────────────────
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('.modal-submit');
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+
+      const body = {
+        username: document.getElementById('login-username').value,
+        password: document.getElementById('login-password').value,
+      };
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeModal('modal-login');
+          setLoggedIn(data.username);
+          showToast(`Welcome back, ${data.username}! 🌙`);
+        } else {
+          showModalError('modal-login', data.error || 'Login failed.');
+        }
+      } catch (_) {
+        showModalError('modal-login', 'Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    });
+
+    // ── Sign-up form ────────────────────────────────────────────────────────
+    document.getElementById('form-signup').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('.modal-submit');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      const body = {
+        email:    document.getElementById('signup-email').value,
+        username: document.getElementById('signup-username').value,
+        password: document.getElementById('signup-password').value,
+        age:      document.getElementById('signup-age').value || undefined,
+        location: document.getElementById('signup-location').value || undefined,
+      };
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showModalSuccess('modal-signup',
+            '✅ Account created!<br>Please check your email and click the verification link before logging in.');
+          e.target.reset();
+        } else {
+          showModalError('modal-signup', data.error || 'Registration failed.');
+        }
+      } catch (_) {
+        showModalError('modal-signup', 'Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+
+    // ── Forgot-password form ────────────────────────────────────────────────
+    document.getElementById('form-forgot').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('.modal-submit');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      const body = { email: document.getElementById('forgot-email').value };
+
+      try {
+        const res = await fetch('/api/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        showModalSuccess('modal-forgot',
+          '📧 ' + (data.message || 'If that email is registered, a reset link has been sent.'));
+        e.target.reset();
+      } catch (_) {
+        showModalError('modal-forgot', 'Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Reset Link';
+      }
+    });
+
+    // ── Show email-verified banner if redirected from verification link ─────
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('verified') === '1') {
+      showToast('✅ Email verified! You can now log in.');
+      history.replaceState({}, '', '/');
+    }
+
+    checkAuthState();
   </script>
+
+  <!-- ── Login Modal ──────────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="modal-login-title">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-login')" aria-label="Close">×</button>
+      <h2 id="modal-login-title">Log In 🌙</h2>
+      <div class="modal-error" role="alert"></div>
+      <form id="form-login" novalidate>
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" name="username" autocomplete="username" required minlength="3" maxlength="20" />
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" autocomplete="current-password" required />
+        <button type="submit" class="modal-submit">Log In</button>
+      </form>
+      <div class="modal-footer">
+        <a onclick="closeModal('modal-login'); openModal('modal-forgot')">Forgot your password?</a>
+        &nbsp;·&nbsp;
+        <a onclick="closeModal('modal-login'); openModal('modal-signup')">Create an account</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Sign-Up Modal ────────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="modal-signup" role="dialog" aria-modal="true" aria-labelledby="modal-signup-title">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-signup')" aria-label="Close">×</button>
+      <h2 id="modal-signup-title">Join the Night 🦉</h2>
+      <div class="modal-error" role="alert"></div>
+      <div class="modal-success"></div>
+      <form id="form-signup" novalidate>
+        <label for="signup-email">Email</label>
+        <input type="email" id="signup-email" name="email" autocomplete="email" required />
+        <label for="signup-username">Username (3–20 chars, letters/numbers/_)</label>
+        <input type="text" id="signup-username" name="username" autocomplete="username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+" />
+        <label for="signup-password">Password (min 8 characters)</label>
+        <input type="password" id="signup-password" name="password" autocomplete="new-password" required minlength="8" />
+        <label for="signup-age">Age (18+)</label>
+        <input type="number" id="signup-age" name="age" min="18" max="120" />
+        <label for="signup-location">Location (optional)</label>
+        <input type="text" id="signup-location" name="location" maxlength="100" />
+        <button type="submit" class="modal-submit">Create Account</button>
+      </form>
+      <div class="modal-footer">
+        Already have an account? <a onclick="closeModal('modal-signup'); openModal('modal-login')">Log in</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Forgot Password Modal ────────────────────────────────────────── -->
+  <div class="modal-overlay" id="modal-forgot" role="dialog" aria-modal="true" aria-labelledby="modal-forgot-title">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-forgot')" aria-label="Close">×</button>
+      <h2 id="modal-forgot-title">Reset Password 🔑</h2>
+      <p style="color:#ccc; font-size:0.9rem; margin:0 0 1rem;">Enter your email and we'll send you a reset link.</p>
+      <div class="modal-error" role="alert"></div>
+      <div class="modal-success"></div>
+      <form id="form-forgot" novalidate>
+        <label for="forgot-email">Email address</label>
+        <input type="email" id="forgot-email" name="email" autocomplete="email" required />
+        <button type="submit" class="modal-submit">Send Reset Link</button>
+      </form>
+      <div class="modal-footer">
+        <a onclick="closeModal('modal-forgot'); openModal('modal-login')">Back to login</a>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
