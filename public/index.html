@@ -1,9 +1,10 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Central Alberta After Dark</title>
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -30,7 +31,7 @@
       background: linear-gradient(to bottom, transparent 25%, rgba(0,53,148,0.7) 50%, transparent 75%);
       z-index: -2;
     }
-   
+
     header {
       background: linear-gradient(135deg, rgba(0,53,148,0.95), rgba(13,54,146,0.95));
       color: #FFEB43;
@@ -46,7 +47,7 @@
       z-index: 1;
       border-bottom: 3px solid #FFEB43;
     }
-   
+
     .flag {
       width: 240px;
       height: auto;
@@ -54,7 +55,7 @@
       flex-shrink: 0;
       display: block;
     }
-   
+
     .title-group {
       display: flex;
       flex-direction: column;
@@ -63,7 +64,7 @@
       flex: 1;
       max-width: 600px;
     }
-   
+
     header h1 {
       margin: 0;
       font-family: 'Impact', 'Arial Black', sans-serif;
@@ -96,7 +97,7 @@
       margin-top: 0.5rem;
       max-width: 100%;
     }
-   
+
     .auth-block {
       position: absolute;
       bottom: 10px;
@@ -119,39 +120,7 @@
     .auth-btn:hover {
       transform: scale(1.05);
     }
-   
-    <!DOCTYPE html>
-<html>
-  <head>
-    <title>Subscribe to a cool new product</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://js.stripe.com/clover/stripe.js"></script>
-  </head>
-  <body>
-    <section>
-      <div class="product">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="16px" viewBox="0 0 14 16" version="1.1">
-            <defs/>
-            <g id="Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
-                    <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow"/>
-                </g>
-            </g>
-        </svg>
-        <div class="description">
-          <h3>Starter Plan</h3>
-          <h5>$19.99 / month</h5>
-        </div>
-      </div>
-      <form action="/create-checkout-session" method="POST">
-        <!-- Add a hidden field with the lookup_key of your Price -->
-        <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
-        <button id="checkout-and-portal-button" type="submit">Checkout</button>
-      </form>
-    </section>
-  </body>
-</html>
-   
+
     .moon-star { position: absolute; top: 10px; right: 10px; font-size: 1.8rem; z-index: 2; }
    
     .app-wrapper {
@@ -478,7 +447,7 @@
 
   <div class="app-wrapper">
     <aside class="left-sidebar">
-      <div class="sidebar-promote" onclick="alert('Dashboard: Upgrade to Night Owl Premium $9.99/mo')">
+      <div class="sidebar-promote" id="upgrade-card">
         <h3>Unlock Night Owl Perks</h3>
         <ul>
           <li>See who's online now</li>
@@ -486,7 +455,14 @@
           <li>No ads</li>
           <li>Priority likes</li>
         </ul>
-        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; font-weight: bold;">$19.99/mo →</div>
+        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; font-weight: bold;">$19.99/mo</div>
+        <button
+          id="upgrade-btn"
+          onclick="startCheckout()"
+          style="margin-top: 0.75rem; width: 100%; padding: 0.6rem 1rem; background: #FFEB43; color: #003594; border: none; border-radius: 20px; font-weight: bold; font-family: Arial, sans-serif; font-size: 1rem; cursor: pointer; transition: transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.05)'"
+          onmouseout="this.style.transform='scale(1)'"
+        >Upgrade to Night Owl Premium →</button>
       </div>
      
       <div class="advertise-card" onclick="alert('Contact: advertise@centralalbertaafterdark.ca')">
@@ -516,6 +492,7 @@
     <button id="chat-send">Send</button>
   </div>
 
+  <script src="/client.js"></script>
   <script>
     // ALL PROFILES - COMPLETE DATA
     const profiles = [
@@ -674,6 +651,60 @@
       localStorage.clear();
       location.reload();
     };
+
+    // ---------------------------------------------------------------------------
+    // Stripe checkout
+    // ---------------------------------------------------------------------------
+    async function startCheckout() {
+      const btn = document.getElementById('upgrade-btn');
+      if (!btn) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+
+      try {
+        const res = await secureFetch('/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (res.status === 401) {
+          showToast('⚠️ Please log in to upgrade to Night Owl Premium.');
+          btn.disabled = false;
+          btn.textContent = 'Upgrade to Night Owl Premium →';
+          return;
+        }
+
+        const data = await res.json();
+
+        if (!res.ok || !data.url) {
+          showToast('❌ ' + (data.error || 'Could not start checkout. Please try again.'));
+          btn.disabled = false;
+          btn.textContent = 'Upgrade to Night Owl Premium →';
+          return;
+        }
+
+        // Redirect to Stripe-hosted checkout page
+        window.location.href = data.url;
+      } catch (err) {
+        console.error('Checkout error:', err);
+        showToast('❌ Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Upgrade to Night Owl Premium →';
+      }
+    }
+
+    // Show success/canceled toasts from Stripe redirect
+    (function handleStripeReturn() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === 'true') {
+        showToast('🎉 Payment successful! Welcome to Night Owl Premium.');
+        history.replaceState(null, '', '/');
+      } else if (params.get('canceled') === 'true') {
+        showToast('ℹ️ Checkout canceled. You can upgrade any time.');
+        history.replaceState(null, '', '/');
+      }
+    })();
 
     renderProfiles();
   </script>
