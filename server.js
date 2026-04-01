@@ -51,7 +51,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://js.stripe.com"],
+      frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com"],
+      connectSrc: ["'self'", "https://api.stripe.com"],
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -148,6 +150,7 @@ db.serialize(() => {
     reset_token_expires INTEGER,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until INTEGER,
+    stripe_customer_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -158,6 +161,7 @@ db.serialize(() => {
     `ALTER TABLE users ADD COLUMN reset_token_expires INTEGER`,
     `ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN locked_until INTEGER`,
+    `ALTER TABLE users ADD COLUMN stripe_customer_id TEXT`,
   ];
   newColumns.forEach(sql => {
     db.run(sql, (err) => {
@@ -205,7 +209,92 @@ db.serialize(() => {
   )`);
 
   console.log('Database tables initialized.');
+
+  // Seed test profiles so they always exist after a restart
+  seedTestProfiles();
 });
+
+async function seedTestProfiles() {
+  const testUsers = [
+    {
+      username: 'testuser1',
+      email: 'testuser1@example.com',
+      password: 'TestPass123',
+      age: 28,
+      location: 'Red Deer, AB',
+      bio: 'Night shift nurse at the hospital. Coffee addict. Looking for someone who understands the 3am life.',
+      shift_schedule: 'nights',
+      is_verified: 1,
+    },
+    {
+      username: 'testuser2',
+      email: 'testuser2@example.com',
+      password: 'TestPass123',
+      age: 35,
+      location: 'Lacombe, AB',
+      bio: 'Oilfield worker, two weeks on two weeks off. Big into fishing and campfires. Seeking good company.',
+      shift_schedule: 'rotating',
+      is_verified: 1,
+    },
+    {
+      username: 'testuser3',
+      email: 'testuser3@example.com',
+      password: 'TestPass123',
+      age: 31,
+      location: 'Ponoka, AB',
+      bio: 'Long-haul trucker running the QE2 corridor. Country music, strong coffee, and honest conversation.',
+      shift_schedule: 'nights',
+      is_verified: 1,
+    },
+    {
+      username: 'testuser4',
+      email: 'testuser4@example.com',
+      password: 'TestPass123',
+      age: 42,
+      location: 'Camrose, AB',
+      bio: 'Night security supervisor. Gym rat, amateur chef. Looking for someone to share late-night dinners with.',
+      shift_schedule: 'nights',
+      is_verified: 1,
+    },
+    {
+      username: 'testuser5',
+      email: 'testuser5@example.com',
+      password: 'TestPass123',
+      age: 26,
+      location: 'Stettler, AB',
+      bio: 'Convenience store manager on nights. Bookworm, dog lover, terrible at sleeping before noon.',
+      shift_schedule: 'nights',
+      is_verified: 1,
+    },
+  ];
+
+  for (const u of testUsers) {
+    db.get(`SELECT id FROM users WHERE username = ?`, [u.username], async (err, existing) => {
+      if (err) { console.error('Seed check error:', err); return; }
+      if (existing) return; // already seeded
+
+      try {
+        const hash = await bcrypt.hash(u.password, 12);
+        db.run(
+          `INSERT INTO users (email, username, password_hash, age, location, bio, shift_schedule, is_verified, is_premium)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+          [u.email, u.username, hash, u.age, u.location, u.bio, u.shift_schedule, u.is_verified],
+          function(err) {
+            if (err) {
+              if (!err.message.includes('UNIQUE constraint')) {
+                console.error(`Seed insert error for ${u.username}:`, err.message);
+              }
+            } else {
+              console.log(`Seeded test profile: ${u.username}`);
+            }
+          }
+        );
+      } catch (e) {
+        console.error(`Seed bcrypt error for ${u.username}:`, e);
+      }
+    });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Input sanitization — strip all HTML from user-supplied strings
@@ -649,31 +738,60 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
 // Stripe checkout
 // ---------------------------------------------------------------------------
 app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => {
+  const priceId = process.env.STRIPE_PRICE_ID;
+  if (!priceId) {
+    console.error('STRIPE_PRICE_ID not set.');
+    return res.status(500).json({ error: 'Stripe is not configured.' });
+  }
+
   try {
-    const prices = await stripe.prices.list({
-      lookup_keys: [req.body.lookup_key],
-      expand: ['data.product'],
+    // Look up the user so we can attach/reuse their Stripe customer ID
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        `SELECT id, email, username, stripe_customer_id FROM users WHERE id = ?`,
+        [req.session.userId],
+        (err, row) => { if (err) reject(err); else resolve(row); }
+      );
     });
-    if (!prices.data.length) {
-      return res.status(400).json({ error: 'Invalid price lookup key.' });
+
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+
+    // Reuse existing Stripe customer or create a new one
+    let customerId = user.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId: String(user.id), username: user.username },
+      });
+      customerId = customer.id;
+      await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE users SET stripe_customer_id = ? WHERE id = ?`,
+          [customerId, user.id],
+          (err) => { if (err) reject(err); else resolve(); }
+        );
+      });
     }
+
     const checkoutSession = await stripe.checkout.sessions.create({
+      customer: customerId,
       billing_address_collection: 'auto',
-      line_items: [{ price: prices.data[0].id, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       client_reference_id: String(req.session.userId),
-      success_url: `${APP_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/cancel.html`,
+      success_url: `${APP_URL}/?success=true`,
+      cancel_url: `${APP_URL}/?canceled=true`,
     });
-    res.redirect(303, checkoutSession.url);
+
+    res.json({ url: checkoutSession.url });
   } catch (err) {
-    console.error('Stripe error:', err);
+    console.error('Stripe checkout error:', err);
     res.status(500).json({ error: 'Failed to create checkout session.' });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Stripe webhook — verifies signature, upgrades user on successful payment
+// Stripe webhook — verifies signature, upgrades/downgrades user on events
 // ---------------------------------------------------------------------------
 app.post('/webhook/stripe', (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -697,22 +815,81 @@ app.post('/webhook/stripe', (req, res) => {
     if (err) { console.error('DB Error:', err); return res.status(500).send('Database error'); }
     if (existing) return res.json({ received: true }); // already handled
 
+    // Log the event for debugging
     db.run(
       `INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES (?, ?, ?)`,
       [event.id, event.type, JSON.stringify(event.data.object)],
       (err) => { if (err) console.error('Webhook log error:', err); }
     );
 
-    if (event.type === 'checkout.session.completed') {
-      const checkoutSession = event.data.object;
-      const userId = checkoutSession.client_reference_id;
+    const obj = event.data.object;
 
-      if (userId) {
-        db.run(`UPDATE users SET is_premium = 1 WHERE id = ?`, [userId], (err) => {
-          if (err) console.error('Failed to upgrade user:', err);
-          else console.log(`User ${userId} upgraded to premium via Stripe webhook.`);
-        });
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        // Upgrade by userId (client_reference_id) and store the customer ID
+        const userId = obj.client_reference_id;
+        const customerId = obj.customer;
+        if (userId) {
+          db.run(
+            `UPDATE users SET is_premium = 1, stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?`,
+            [customerId || null, userId],
+            (err) => {
+              if (err) console.error('Webhook: failed to upgrade user by userId:', err);
+              else console.log(`Webhook: user ${userId} upgraded to premium (checkout.session.completed).`);
+            }
+          );
+        }
+        break;
       }
+
+      case 'customer.subscription.created': {
+        const customerId = obj.customer;
+        if (customerId) {
+          db.run(
+            `UPDATE users SET is_premium = 1 WHERE stripe_customer_id = ?`,
+            [customerId],
+            (err) => {
+              if (err) console.error('Webhook: failed to set premium on subscription.created:', err);
+              else console.log(`Webhook: customer ${customerId} subscription created — premium enabled.`);
+            }
+          );
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const customerId = obj.customer;
+        const isActive = obj.status === 'active' || obj.status === 'trialing';
+        if (customerId) {
+          db.run(
+            `UPDATE users SET is_premium = ? WHERE stripe_customer_id = ?`,
+            [isActive ? 1 : 0, customerId],
+            (err) => {
+              if (err) console.error('Webhook: failed to update premium on subscription.updated:', err);
+              else console.log(`Webhook: customer ${customerId} subscription updated — is_premium=${isActive ? 1 : 0}.`);
+            }
+          );
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const customerId = obj.customer;
+        if (customerId) {
+          db.run(
+            `UPDATE users SET is_premium = 0 WHERE stripe_customer_id = ?`,
+            [customerId],
+            (err) => {
+              if (err) console.error('Webhook: failed to revoke premium on subscription.deleted:', err);
+              else console.log(`Webhook: customer ${customerId} subscription deleted — premium revoked.`);
+            }
+          );
+        }
+        break;
+      }
+
+      default:
+        console.log(`Webhook: unhandled event type ${event.type}`);
     }
 
     res.json({ received: true });
