@@ -54,6 +54,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com"],
       connectSrc: ["'self'", "https://api.stripe.com"],
       imgSrc: ["'self'", "data:", "https:"],
