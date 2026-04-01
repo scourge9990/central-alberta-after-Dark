@@ -13,6 +13,8 @@ const { body, validationResult } = require('express-validator');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// Build version: force rebuild - 2026-04-01
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
