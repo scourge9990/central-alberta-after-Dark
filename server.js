@@ -91,7 +91,6 @@ app.use('/api/', apiLimiter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(express.static('public'));
 
 // ---------------------------------------------------------------------------
 // Session — persistent SQLite store, secure cookies in production
@@ -119,6 +118,11 @@ const csrfProtection = csrf({ cookie: false }); // uses session store
 app.get('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
+
+// ---------------------------------------------------------------------------
+// Static files — served after session middleware so session context is available
+// ---------------------------------------------------------------------------
+app.use(express.static('public'));
 
 // ---------------------------------------------------------------------------
 // Database
