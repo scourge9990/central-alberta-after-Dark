@@ -416,11 +416,187 @@
       .auth-block { position: static; margin-top: 1rem; }
       .payment-block { display: none !important; }
     }
+
+    /* -----------------------------------------------------------------------
+       Auth Modals
+    ----------------------------------------------------------------------- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #003594;
+      border: 3px solid #FFEB43;
+      border-radius: 14px;
+      padding: 2rem 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      font-family: Arial, sans-serif;
+    }
+    .modal-box h2 {
+      margin: 0 0 1.5rem;
+      color: #FFEB43;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #FFEB43;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+    }
+    .modal-field label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #FFEB43;
+      letter-spacing: 0.5px;
+    }
+    .modal-field input {
+      padding: 0.65rem 0.9rem;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      font-family: Arial, sans-serif;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .modal-field input:focus {
+      border-color: #fff;
+      background: rgba(255,255,255,0.18);
+    }
+    .modal-field input::placeholder { color: rgba(255,255,255,0.45); }
+    .modal-submit {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      background: #FFEB43;
+      color: #003594;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .modal-submit:hover { transform: scale(1.03); background: #ffe000; }
+    .modal-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .modal-error {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      text-align: center;
+      min-height: 1.2em;
+    }
+    .modal-switch {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+    .modal-switch a {
+      color: #FFEB43;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .modal-switch a:hover { color: #fff; }
+    @media (max-width: 480px) {
+      .modal-box { padding: 1.5rem 1.2rem; margin: 0 1rem; }
+    }
   </style>
 </head>
 <body>
   <div id="toast"></div>
- 
+
+  <!-- =====================================================================
+       Login Modal
+  ====================================================================== -->
+  <div id="login-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('login-modal')" aria-label="Close">&times;</button>
+      <h2 id="login-title">🌙 Log In</h2>
+      <form id="login-form" onsubmit="submitLogin(event)" novalidate>
+        <div class="modal-field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" name="username" placeholder="your_username" autocomplete="username" required />
+        </div>
+        <div class="modal-field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <div class="modal-error" id="login-error"></div>
+        <button type="submit" class="modal-submit" id="login-submit">Log In</button>
+      </form>
+      <div class="modal-switch">
+        Don't have an account? <a onclick="switchModal('login-modal','signup-modal')">Sign Up</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       Sign Up Modal
+  ====================================================================== -->
+  <div id="signup-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signup-title">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('signup-modal')" aria-label="Close">&times;</button>
+      <h2 id="signup-title">✨ Sign Up</h2>
+      <form id="signup-form" onsubmit="submitSignup(event)" novalidate>
+        <div class="modal-field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" name="email" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+        <div class="modal-field">
+          <label for="signup-username">Username <span style="font-weight:normal;color:#ccc;">(3–20 chars, letters/numbers/_)</span></label>
+          <input type="text" id="signup-username" name="username" placeholder="night_owl_42" autocomplete="username" required />
+        </div>
+        <div class="modal-field">
+          <label for="signup-password">Password <span style="font-weight:normal;color:#ccc;">(min 8 chars)</span></label>
+          <input type="password" id="signup-password" name="password" placeholder="••••••••" autocomplete="new-password" required />
+        </div>
+        <div class="modal-field">
+          <label for="signup-age">Age <span style="font-weight:normal;color:#ccc;">(18+)</span></label>
+          <input type="number" id="signup-age" name="age" placeholder="25" min="18" max="120" />
+        </div>
+        <div class="modal-field">
+          <label for="signup-location">Location <span style="font-weight:normal;color:#ccc;">(optional)</span></label>
+          <input type="text" id="signup-location" name="location" placeholder="Red Deer, AB" autocomplete="off" />
+        </div>
+        <div class="modal-error" id="signup-error"></div>
+        <button type="submit" class="modal-submit" id="signup-submit">Create Account</button>
+      </form>
+      <div class="modal-switch">
+        Already have an account? <a onclick="switchModal('signup-modal','login-modal')">Log In</a>
+      </div>
+    </div>
+  </div>
+
   <header>
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
@@ -434,8 +610,8 @@
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
     <div class="auth-block">
-      <button class="auth-btn" onclick="document.getElementById('payment-btn').style.display='block'; alert('Login modal would open')">Log In</button>
-      <button class="auth-btn" onclick="alert('Sign Up modal would open')">Sign Up</button>
+      <button class="auth-btn" onclick="openModal('login-modal')">Log In</button>
+      <button class="auth-btn" onclick="openModal('signup-modal')">Sign Up</button>
     </div>
    
     <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')">
@@ -707,6 +883,148 @@
     })();
 
     renderProfiles();
+
+    // -------------------------------------------------------------------------
+    // Modal helpers
+    // -------------------------------------------------------------------------
+    function openModal(id) {
+      const overlay = document.getElementById(id);
+      if (!overlay) return;
+      overlay.classList.add('open');
+      // Focus the first input for accessibility
+      const first = overlay.querySelector('input');
+      if (first) setTimeout(() => first.focus(), 50);
+    }
+
+    function closeModal(id) {
+      const overlay = document.getElementById(id);
+      if (!overlay) return;
+      overlay.classList.remove('open');
+      // Clear error messages when closing
+      const err = overlay.querySelector('.modal-error');
+      if (err) err.textContent = '';
+    }
+
+    function switchModal(fromId, toId) {
+      closeModal(fromId);
+      openModal(toId);
+    }
+
+    // Close modal when clicking the dark overlay (outside the box)
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+      });
+    });
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(o => closeModal(o.id));
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // Login form submission
+    // -------------------------------------------------------------------------
+    async function submitLogin(e) {
+      e.preventDefault();
+      const errEl  = document.getElementById('login-error');
+      const btn    = document.getElementById('login-submit');
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      errEl.textContent = '';
+
+      if (!username || !password) {
+        errEl.textContent = 'Please enter your username and password.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+
+      try {
+        const res = await secureFetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          // Clear fields and close modal
+          document.getElementById('login-form').reset();
+          closeModal('login-modal');
+          showToast('✅ Welcome back, ' + (data.username || username) + '!');
+        } else {
+          errEl.textContent = data.error || 'Login failed. Please try again.';
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        errEl.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Sign Up form submission
+    // -------------------------------------------------------------------------
+    async function submitSignup(e) {
+      e.preventDefault();
+      const errEl    = document.getElementById('signup-error');
+      const btn      = document.getElementById('signup-submit');
+      const email    = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const age      = document.getElementById('signup-age').value;
+      const location = document.getElementById('signup-location').value.trim();
+
+      errEl.textContent = '';
+
+      if (!email || !username || !password) {
+        errEl.textContent = 'Email, username, and password are required.';
+        return;
+      }
+      if (age && (parseInt(age, 10) < 18 || parseInt(age, 10) > 120)) {
+        errEl.textContent = 'You must be 18 or older to join.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        const body = { email, username, password };
+        if (age)      body.age      = parseInt(age, 10);
+        if (location) body.location = location;
+
+        const res = await secureFetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          document.getElementById('signup-form').reset();
+          closeModal('signup-modal');
+          showToast('🎉 Account created! Check your email to verify your address.');
+        } else {
+          errEl.textContent = data.error || 'Registration failed. Please try again.';
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        errEl.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
   </script>
 </body>
 </html>
