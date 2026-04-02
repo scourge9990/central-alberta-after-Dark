@@ -939,12 +939,14 @@
       showModalMsg('login-msg', '', '');
 
       try {
-        const csrfToken = await getCsrfToken();
+        const csrfRes = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+        if (!csrfRes.ok) throw new Error('Could not fetch security token. Please refresh the page.');
+        const { csrfToken } = await csrfRes.json();
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ username, password, _csrf: csrfToken }),
+          body: JSON.stringify({ username, password, csrfToken }),
         });
         const data = await res.json();
 
