@@ -115,7 +115,7 @@ app.use(session({
 // ---------------------------------------------------------------------------
 // CSRF protection — applied to all state-changing routes
 // ---------------------------------------------------------------------------
-const csrfProtection = csrf({ cookie: false }); // uses session store
+const csrfProtection = csrf({ cookie: true }); // uses cookie store (more reliable for SPAs)
 
 // Expose CSRF token to the frontend via a dedicated endpoint
 app.get('/api/csrf-token', csrfProtection, (req, res) => {
