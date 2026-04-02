@@ -1,6 +1,7 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const rateLimit = require('express-rate-limit');
@@ -111,6 +112,11 @@ app.use(session({
     sameSite: 'strict',
   },
 }));
+
+// ---------------------------------------------------------------------------
+// Cookie parser — required by csurf when cookie: true is set
+// ---------------------------------------------------------------------------
+app.use(cookieParser());
 
 // ---------------------------------------------------------------------------
 // CSRF protection — applied to all state-changing routes
