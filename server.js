@@ -17,11 +17,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life-secret-key';
+const SESSION_SECRET = process.env.SESSION_SECRET || 
+'central-alberta-night-life-secret-key';
 
-// ---------------------------------------------------------------------------
-// Email transporter
-// ---------------------------------------------------------------------------
 const emailTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -43,9 +41,6 @@ async function sendEmail(to, subject, html) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Security middleware
-// ---------------------------------------------------------------------------
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -58,9 +53,6 @@ app.use(helmet({
   },
 }));
 
-// ---------------------------------------------------------------------------
-// Rate limiters
-// ---------------------------------------------------------------------------
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -83,9 +75,6 @@ app.use('/api/login', loginLimiter);
 app.use('/api/register', registerLimiter);
 app.use('/api/', apiLimiter);
 
-// ---------------------------------------------------------------------------
-// Body parsing
-// ---------------------------------------------------------------------------
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -93,9 +82,7 @@ const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.use(express.static('public'));
 
-// ---------------------------------------------------------------------------
-// Session — FIXED for production
-// ---------------------------------------------------------------------------
+// ✅ SESSION FIX: secure: true (Railway is always HTTPS), domain, sameSite
 app.use(session({
   store: new SQLiteStore({ db: 'sessions.sqlite', dir: './' }),
   secret: SESSION_SECRET,
@@ -103,17 +90,14 @@ app.use(session({
   saveUninitialized: false,
   name: 'sessionId',
   cookie: {
-    secure: true,                                         // ✅ Always true on Railway (HTTPS)
+    secure: true,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none',                                     // ✅ Required for proxy/CDN
-    domain: '.centralalbertaafterdark.com',               // ✅ Covers www. and root
+    sameSite: 'none',
+    domain: '.centralalbertaafterdark.com',
   },
 }));
 
-// ---------------------------------------------------------------------------
-// CSRF protection
-// ---------------------------------------------------------------------------
 const csrfProtection = csrf();
 
 const csrfGenerateOnly = (req, res, next) => {
@@ -129,9 +113,6 @@ app.get('/api/csrf-token', csrfGenerateOnly, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
-// ---------------------------------------------------------------------------
-// Database (unchanged — kept intact)
-// ---------------------------------------------------------------------------
 const db = new sqlite3.Database('./database.sqlite', (err) => {
   if (err) {
     console.error('Failed to open database:', err.message);
@@ -142,7 +123,6 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 
 db.serialize(() => {
   db.run('PRAGMA foreign_keys = ON');
-
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE NOT NULL COLLATE NOCASE,
@@ -161,7 +141,6 @@ db.serialize(() => {
     locked_until INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
-
   const newColumns = [
     `ALTER TABLE users ADD COLUMN verification_token TEXT`,
     `ALTER TABLE users ADD COLUMN reset_token TEXT`,
@@ -176,458 +155,280 @@ db.serialize(() => {
       }
     });
   });
-
-  db.run(`CREATE TABLE IF NOT EXISTS profiles (
-    user_id INTEGER PRIMARY KEY,
-    interests TEXT,
-    looking_for TEXT,
-    photos TEXT DEFAULT '[]',
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    liker_id INTEGER,
-    liked_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(liker_id, liked_id),
-    FOREIGN KEY(liker_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(liked_id) REFERENCES users(id) ON DELETE CASCADE
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user1_id INTEGER,
-    user2_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user1_id, user2_id),
-    FOREIGN KEY(user1_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS webhook_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    stripe_event_id TEXT UNIQUE NOT NULL,
-    event_type TEXT NOT NULL,
-    payload TEXT,
-    processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
-
+  db.run(`CREATE TABLE IF NOT EXISTS profiles (user_id INTEGER PRIMARY KEY, interests 
+TEXT, looking_for TEXT, photos TEXT DEFAULT '[]', FOREIGN KEY(user_id) REFERENCES 
+users(id) ON DELETE CASCADE)`);
+  db.run(`CREATE TABLE IF NOT EXISTS likes (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+liker_id INTEGER, liked_id INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+UNIQUE(liker_id, liked_id), FOREIGN KEY(liker_id) REFERENCES users(id) ON DELETE 
+CASCADE, FOREIGN KEY(liked_id) REFERENCES users(id) ON DELETE CASCADE)`);
+  db.run(`CREATE TABLE IF NOT EXISTS matches (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+user1_id INTEGER, user2_id INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+UNIQUE(user1_id, user2_id), FOREIGN KEY(user1_id) REFERENCES users(id) ON DELETE 
+CASCADE, FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE)`);
+  db.run(`CREATE TABLE IF NOT EXISTS webhook_events (id INTEGER PRIMARY KEY 
+AUTOINCREMENT, stripe_event_id TEXT UNIQUE NOT NULL, event_type TEXT NOT NULL, 
+payload TEXT, processed_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
   console.log('Database tables initialized.');
 });
 
-// ---------------------------------------------------------------------------
-// Input sanitization
-// ---------------------------------------------------------------------------
-const xssOptions = {
-  whiteList: {},
-  stripIgnoreTag: true,
-  stripIgnoreTagBody: ['script', 'style'],
-};
-
-function sanitizeInput(input) {
-  if (typeof input !== 'string') return input;
-  return xss(input, xssOptions);
-}
+const xssOptions = { whiteList: {}, stripIgnoreTag: true, stripIgnoreTagBody: 
+['script', 'style'] };
+function sanitizeInput(input) { if (typeof input !== 'string') return input; return 
+xss(input, xssOptions); }
 
 app.use((req, res, next) => {
   if (req.body && typeof req.body === 'object') {
-    try {
-      for (const key of Object.keys(req.body)) {
-        if (typeof req.body[key] === 'string') {
-          req.body[key] = sanitizeInput(req.body[key]);
-        }
-      }
-    } catch (e) {
-      console.error('Sanitization error:', e);
-    }
+    try { for (const key of Object.keys(req.body)) { if (typeof req.body[key] === 
+'string') req.body[key] = sanitizeInput(req.body[key]); } }
+    catch (e) { console.error('Sanitization error:', e); }
   }
   next();
 });
 
-// ---------------------------------------------------------------------------
-// Auth middleware
-// ---------------------------------------------------------------------------
-const requireAuth = (req, res, next) => {
-  if (req.session?.userId) {
-    next();
-  } else {
-    return res.status(401).json({ error: 'Unauthorized - please log in.' });
-  }
-};
+const requireAuth = (req, res, next) => { if (req.session?.userId) { next(); } else { 
+return res.status(401).json({ error: 'Unauthorized - please log in.' }); } };
 
-// ---------------------------------------------------------------------------
-// Registration
-// ---------------------------------------------------------------------------
 app.post('/api/register',
   csrfProtection,
-  [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-    body('username')
-      .isLength({ min: 3, max: 20 })
-      .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage('Username: 3-20 chars, letters/numbers/underscore only'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 18-120'),
-  ],
+  [ body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
+    body('username').isLength({ min: 3, max: 20 
+}).matches(/^[a-zA-Z0-9_]+$/).withMessage('Username: 3-20 chars, 
+letters/numbers/underscore only'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 
+characters'),
+    body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 
+18-120') ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
-    }
-
+    if (!errors.isEmpty()) { return res.status(400).json({ error: 
+errors.array().map(e => e.msg).join(', ') }); }
     const { email, username, password, age, location } = req.body;
     const safeLocation = location ? sanitizeInput(location) : null;
-
     try {
       const hashedPassword = await bcrypt.hash(password, 12);
       const verificationToken = crypto.randomBytes(32).toString('hex');
-
-      db.run(
-        `INSERT INTO users (email, username, password_hash, age, location, verification_token)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, verificationToken],
+      db.run(`INSERT INTO users (email, username, password_hash, age, location, 
+verification_token) VALUES (?, ?, ?, ?, ?, ?)`,
+        [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, 
+verificationToken],
         async function(err) {
           if (err) {
-            if (err.message?.includes('UNIQUE constraint failed')) {
-              return res.status(400).json({ error: 'Email or username already taken.' });
-            }
+            if (err.message?.includes('UNIQUE constraint failed')) return 
+res.status(400).json({ error: 'Email or username already taken.' });
             console.error('DB Error:', err);
             return res.status(500).json({ error: 'Database error' });
           }
-
           const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
-          await sendEmail(email, 'Verify your Central Alberta After Dark account', 
-            `<p>Welcome to Central Alberta After Dark!</p>
-             <p>Please verify your email address by clicking the link below:</p>
-             <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-             <p>This link does not expire — but you must verify before you can log in.</p>`
-          );
+          await sendEmail(email, 'Verify your Central Alberta After Dark account',
+            `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email 
+address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging 
+in.</p>`);
+          res.status(201).json({ success: true, message: 'Account created! Please 
+check your email to verify.' });
+        });
+    } catch (error) { console.error('Server Error:', error); res.status(500).json({ 
+error: 'Internal server error' }); }
+  });
 
-          res.status(201).json({
-            success: true,
-            message: 'Account created! Please check your email to verify your address before logging in.',
-          });
-        }
-      );
-    } catch (error) {
-      console.error('Server Error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-);
-
-// ---------------------------------------------------------------------------
-// Email verification
-// ---------------------------------------------------------------------------
 app.get('/api/verify-email', (req, res) => {
   const { token } = req.query;
-  if (!token || typeof token !== 'string') {
-    return res.status(400).json({ error: 'Invalid verification token.' });
-  }
-
-  db.run(
-    `UPDATE users SET is_verified = 1, verification_token = NULL
-     WHERE verification_token = ? AND is_verified = 0`,
-    [token],
-    function(err) {
-      if (err) {
-        console.error('DB Error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (this.changes === 0) {
-        return res.status(400).json({ error: 'Invalid or already-used verification token.' });
-      }
-      res.redirect('/?verified=1');
-    }
-  );
+  if (!token || typeof token !== 'string') return res.status(400).json({ error: 
+'Invalid verification token.' });
+  db.run(`UPDATE users SET is_verified = 1, verification_token = NULL WHERE 
+verification_token = ? AND is_verified = 0`, [token], function(err) {
+    if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 
+'Database error' }); }
+    if (this.changes === 0) return res.status(400).json({ error: 'Invalid or 
+already-used verification token.' });
+    res.redirect('/?verified=1');
+  });
 });
 
-// Resend verification email
 app.post('/api/resend-verification', csrfProtection, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
-
-  db.get(`SELECT id, email, is_verified, verification_token FROM users WHERE email = ?`, [email.toLowerCase()], async (err, user) => {
+  db.get(`SELECT id, email, is_verified, verification_token FROM users WHERE email = 
+?`, [email.toLowerCase()], async (err, user) => {
     if (err) return res.status(500).json({ error: 'Database error' });
-    if (!user || user.is_verified) {
-      return res.json({ success: true, message: 'If that address is registered and unverified, a new email has been sent.' });
-    }
-
+    if (!user || user.is_verified) return res.json({ success: true, message: 'If that 
+address is registered and unverified, a new email has been sent.' });
     const newToken = crypto.randomBytes(32).toString('hex');
-    db.run(`UPDATE users SET verification_token = ? WHERE id = ?`, [newToken, user.id]);
-
+    db.run(`UPDATE users SET verification_token = ? WHERE id = ?`, [newToken, 
+user.id]);
     const verifyUrl = `${APP_URL}/api/verify-email?token=${newToken}`;
     await sendEmail(user.email, 'Verify your Central Alberta After Dark account', 
-      `<p>Here is your new verification link:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
-    );
-
-    res.json({ success: true, message: 'If that address is registered and unverified, a new email has been sent.' });
+`<p>Here is your new verification link: <a 
+href="${verifyUrl}">${verifyUrl}</a></p>`);
+    res.json({ success: true, message: 'If 
+that address is registered and unverified, a new email has been sent.' });
   });
 });
-
-// ---------------------------------------------------------------------------
-// Login — FIXED validation
-// ---------------------------------------------------------------------------
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 app.post('/api/login',
   csrfProtection,
-  [
-    body('username').isLength({ min: 3 }).withMessage('Invalid username'),
-    body('password').exists().withMessage('Password required'),
-  ],
+  [ body('username').isLength({ min: 3 }).withMessage('Invalid username'),
+    body('password').exists().withMessage('Password required') ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
-    }
-
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array().map(e 
+=> e.msg).join(', ') });
     const { username, password } = req.body;
-
-    db.get(
-      `SELECT id, username, password_hash, is_verified, failed_login_attempts, locked_until
-       FROM users WHERE username = ?`,
-      [username],
-      async (err, user) => {
-        if (err) {
-          console.error('DB Error:', err);
-          return res.status(500).json({ error: 'Database error' });
-        }
-
-        if (!user) {
-          await bcrypt.hash('dummy-prevent-timing-attack', 12);
+    db.get(`SELECT id, username, password_hash, is_verified, failed_login_attempts, 
+locked_until FROM users WHERE username = ?`, [username], async (err, user) => {
+      if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
+      if (!user) { await bcrypt.hash('dummy', 12); return res.status(401).json({ 
+error: 'Invalid credentials' }); }
+      const now = Date.now();
+      if (user.locked_until && now < user.locked_until) return res.status(423).json({ 
+error: `Account locked. Try again in ${(user.locked_until - now)/60000|0} minutes.` 
+});
+      if (!user.is_verified) return res.status(403).json({ error: 'Please verify your 
+email address before logging in.' });
+      try {
+        const match = await bcrypt.compare(password, user.password_hash);
+        if (!match) {
+          const newAttempts = (user.failed_login_attempts || 0) + 1;
+          const shouldLock = newAttempts >= 5;
+          db.run(`UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE 
+id = ?`, [newAttempts, shouldLock ? now + 15*60*1000 : null, user.id]);
+          if (shouldLock) return res.status(423).json({ error: 'Too many failed 
+attempts. Account locked for 15 minutes.' });
           return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        const now = Date.now();
-        if (user.locked_until && now < user.locked_until) {
-          const minutesLeft = Math.ceil((user.locked_until - now) / 60000);
-          return res.status(423).json({
-            error: `Account locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
-          });
-        }
-
-        if (!user.is_verified) {
-          return res.status(403).json({
-            error: 'Please verify your email address before logging in. Check your inbox or request a new verification email.',
-          });
-        }
-
-        try {
-          const match = await bcrypt.compare(password, user.password_hash);
-
-          if (!match) {
-            const newAttempts = (user.failed_login_attempts || 0) + 1;
-            const shouldLock = newAttempts >= MAX_FAILED_ATTEMPTS;
-            db.run(
-              `UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?`,
-              [newAttempts, shouldLock ? now + LOCKOUT_DURATION_MS : null, user.id]
-            );
-            if (shouldLock) {
-              return res.status(423).json({ error: 'Too many failed attempts. Account locked for 15 minutes.' });
-            }
-            return res.status(401).json({ error: 'Invalid credentials' });
-          }
-
-          db.run(`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?`, [user.id]);
-
-          req.session.regenerate((err) => {
-            if (err) {
-              console.error('Session regeneration error:', err);
-              return res.status(500).json({ error: 'Server error' });
-            }
-            req.session.userId = user.id;
-            req.session.username = user.username;
-            res.json({ success: true, username: user.username });
-          });
-        } catch (error) {
-          console.error('Bcrypt Error:', error);
-          res.status(500).json({ error: 'Server error' });
-        }
-      }
-    );
-  }
-);
-
-// ---------------------------------------------------------------------------
-// Logout
-// ---------------------------------------------------------------------------
-app.post('/api/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ error: 'Logout failed.' });
-    res.clearCookie('sessionId');
-    res.json({ success: true, message: 'Logged out.' });
+        db.run(`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE 
+id = ?`, [user.id]);
+        req.session.regenerate((err) => {
+          if (err) { console.error('Session regeneration error:', err); return 
+res.status(500).json({ error: 'Server error' }); }
+          req.session.userId = user.id;
+          req.session.username = user.username;
+          res.json({ success: true, username: user.username });
+        });
+      } catch (error) { console.error('Bcrypt Error:', error); res.status(500).json({ 
+error: 'Server error' }); }
+    });
   });
+
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => { if (err) return res.status(500).json({ error: 
+'Logout failed.' }); res.clearCookie('sessionId'); res.json({ success: true, message: 
+'Logged out.' }); });
 });
 
-// ---------------------------------------------------------------------------
-// Password reset — request
-// ---------------------------------------------------------------------------
 app.post('/api/forgot-password', csrfProtection, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
-
-  const genericResponse = { success: true, message: 'If that email is registered, a reset link has been sent.' };
-
-  db.get(`SELECT id, email FROM users WHERE email = ?`, [email.toLowerCase()], async (err, user) => {
+  const genericResponse = { success: true, message: 'If that email is registered, a 
+reset link has been sent.' };
+  db.get(`SELECT id, email FROM users WHERE email = ?`, [email.toLowerCase()], async 
+(err, user) => {
     if (err) { console.error('DB Error:', err); }
     if (!user) return res.json(genericResponse);
-
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expires = Date.now() + 60 * 60 * 1000;
-
-    db.run(
-      `UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?`,
-      [resetToken, expires, user.id],
-      async (err) => {
-        if (err) { console.error('DB Error:', err); return res.json(genericResponse); }
-
-        const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
-        await sendEmail(user.email, 'Reset your Central Alberta After Dark password',
-          `<p>You requested a password reset.</p>
-           <p>Click the link below to set a new password. This link expires in 1 hour.</p>
-           <p><a href="${resetUrl}">${resetUrl}</a></p>`
-        );
-
-        res.json(genericResponse);
-      }
-    );
+    db.run(`UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?`, 
+[resetToken, expires, user.id], async (err) => {
+      if (err) { console.error('DB Error:', err); return res.json(genericResponse); }
+      const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
+      await sendEmail(user.email, 'Reset your Central Alberta After Dark password', 
+`<p><a href="${resetUrl}">${resetUrl}</a></p>`);
+      res.json(genericResponse);
+    });
   });
 });
 
-// ---------------------------------------------------------------------------
-// Password reset — confirm
-// ---------------------------------------------------------------------------
 app.post('/api/reset-password', csrfProtection, async (req, res) => {
   const { token, password } = req.body;
-  if (!token || !password) {
-    return res.status(400).json({ error: 'Token and new password are required.' });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-  }
-
-  db.get(`SELECT id, reset_token_expires FROM users WHERE reset_token = ?`, [token], async (err, user) => {
-    if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
-    if (!user) return res.status(400).json({ error: 'Invalid or expired reset token.' });
-    if (Date.now() > user.reset_token_expires) {
-      return res.status(400).json({ error: 'Reset token has expired. Please request a new one.' });
-    }
-
+  if (!token || !password) return res.status(400).json({ error: 'Token and new 
+password are required.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at 
+least 8 characters.' });
+  db.get(`SELECT id, reset_token_expires FROM users WHERE reset_token = ?`, [token], 
+async (err, user) => {
+    if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 
+'Database error' }); }
+    if (!user) return res.status(400).json({ error: 'Invalid or expired reset token.' 
+});
+    if (Date.now() > user.reset_token_expires) return res.status(400).json({ error: 
+'Reset token has expired.' });
     try {
       const hashedPassword = await bcrypt.hash(password, 12);
-      db.run(
-        `UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL,
-         failed_login_attempts = 0, locked_until = NULL WHERE id = ?`,
-        [hashedPassword, user.id],
-        (err) => {
-          if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
-          res.json({ success: true, message: 'Password updated. You can now log in.' });
-        }
-      );
-    } catch (error) {
-      console.error('Bcrypt Error:', error);
-      res.status(500).json({ error: 'Server error' });
-    }
+      db.run(`UPDATE users SET password_hash = ?, reset_token = NULL, 
+reset_token_expires = NULL, failed_login_attempts = 0, locked_until = NULL WHERE id = 
+?`, [hashedPassword, user.id], (err) => {
+        if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
+        res.json({ success: true, message: 'Password updated. You can now log in.' 
+});
+      });
+    } catch (error) { console.error('Bcrypt Error:', error); res.status(500).json({ 
+error: 'Server error' }); }
   });
 });
 
-// ---------------------------------------------------------------------------
-// Profile & social endpoints
-// ---------------------------------------------------------------------------
 app.get('/api/me', requireAuth, (req, res) => {
-  db.get(
-    `SELECT id, username, email, age, location, bio, is_premium, created_at FROM users WHERE id = ?`,
-    [req.session.userId],
-    (err, user) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!user) return res.status(404).json({ error: 'User not found' });
-      res.json(user);
-    }
-  );
+  db.get(`SELECT id, username, email, age, location, bio, is_premium, created_at FROM 
+users WHERE id = ?`, [req.session.userId], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  });
 });
 
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
   const { bio, location, shift_schedule } = req.body;
-  const safeBio = bio ? sanitizeInput(bio) : null;
-  const safeLocation = location ? sanitizeInput(location) : null;
-  const safeShift = shift_schedule ? sanitizeInput(shift_schedule) : null;
-
-  db.run(
-    `UPDATE users SET bio = COALESCE(?, bio), location = COALESCE(?, location),
-     shift_schedule = COALESCE(?, shift_schedule) WHERE id = ?`,
-    [safeBio, safeLocation, safeShift, req.session.userId],
-    function(err) {
-      if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
-      res.json({ success: true });
-    }
+  db.run(`UPDATE users SET bio = COALESCE(?, bio), location = COALESCE(?, location), 
+shift_schedule = COALESCE(?, shift_schedule) WHERE id = ?`,
+    [bio ? sanitizeInput(bio) : null, location ? sanitizeInput(location) : null, 
+shift_schedule ? sanitizeInput(shift_schedule) : null, req.session.userId],
+    function(err) { if (err) { console.error('DB Error:', err); return 
+res.status(500).json({ error: 'Database error' }); } res.json({ success: true }); }
   );
 });
 
 app.get('/api/profiles', (req, res) => {
-  db.all(
-    `SELECT id, username, age, location, bio FROM users
-     WHERE is_verified = 1 AND (id != ? OR ? IS NULL)`,
-    [req.session?.userId || null, req.session?.userId || null],
-    (err, rows) => {
-      if (err) {
-        console.error('DB Error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(rows);
-    }
-  );
+  db.all(`SELECT id, username, age, location, bio FROM users WHERE is_verified = 1 
+AND (id != ? OR ? IS NULL)`, [req.session?.userId || null, req.session?.userId || 
+null], (err, rows) => {
+    if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 
+'Database error' }); }
+    res.json(rows);
+  });
 });
 
 app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
   const likedId = parseInt(req.params.id, 10);
   const likerId = req.session.userId;
-
-  if (likedId === likerId) {
-    return res.status(400).json({ error: 'Cannot like yourself' });
-  }
-
-  db.run(
-    `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, [likerId, likedId],
-    function(err) {
-      if (err) {
-        console.error('DB Error:', err);
-        return res.status(500).json({ error: 'Database error' });
+  if (likedId === likerId) return res.status(400).json({ error: 'Cannot like 
+yourself' });
+  db.run(`INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, [likerId, 
+likedId], function(err) {
+    if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 
+'Database error' }); }
+    db.get(`SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, [likedId, 
+likerId], (err, reciprocal) => {
+      if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
+      if (reciprocal) {
+        const user1 = Math.min(likerId, likedId), user2 = Math.max(likerId, likedId);
+        db.run(`INSERT OR IGNORE INTO matches (user1_id, user2_id) VALUES (?, ?)`, 
+[user1, user2]);
+        return res.json({ success: true, match: true, message: "It's a match!" });
       }
-
-      db.get(`SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, [likedId, likerId], (err, reciprocal) => {
-        if (err) {
-          console.error('DB Error:', err);
-          return res.status(500).json({ error: 'Database error' });
-        }
-
-        if (reciprocal) {
-          const user1 = Math.min(likerId, likedId);
-          const user2 = Math.max(likerId, likedId);
-          db.run(`INSERT OR IGNORE INTO matches (user1_id, user2_id) VALUES (?, ?)`, [user1, user2]);
-          return res.json({ success: true, match: true, message: "It's a match!" });
-        }
-
-        res.json({ success: true, match: false, message: 'Liked!' });
-      });
-    }
-  );
+      res.json({ success: true, match: false, message: 'Liked!' });
+    });
+  });
 });
 
-// ---------------------------------------------------------------------------
-// Stripe checkout
-// ---------------------------------------------------------------------------
-app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => {
+app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => 
+{
   try {
-    const prices = await stripe.prices.list({
-      lookup_keys: [req.body.lookup_key],
-      expand: ['data.product'],
-    });
-    if (!prices.data.length) {
-      return res.status(400).json({ error: 'Invalid price lookup key.' });
-    }
+    const prices = await stripe.prices.list({ lookup_keys: [req.body.lookup_key], 
+expand: ['data.product'] });
+    if (!prices.data.length) return res.status(400).json({ error: 'Invalid price 
+lookup key.' });
     const checkoutSession = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       line_items: [{ price: prices.data[0].id, quantity: 1 }],
@@ -637,71 +438,45 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
       cancel_url: `${APP_URL}/cancel.html`,
     });
     res.redirect(303, checkoutSession.url);
-  } catch (err) {
-    console.error('Stripe error:', err);
-    res.status(500).json({ error: 'Failed to create checkout session.' });
-  }
+  } catch (err) { console.error('Stripe error:', err); res.status(500).json({ error: 
+'Failed to create checkout session.' }); }
 });
 
-// ---------------------------------------------------------------------------
-// Stripe webhook
-// ---------------------------------------------------------------------------
 app.post('/webhook/stripe', (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET not set — webhook disabled.');
-    return res.status(500).send('Webhook secret not configured.');
-  }
-
+  if (!webhookSecret) { console.error('STRIPE_WEBHOOK_SECRET not set — webhook 
+disabled.'); return res.status(500).send('Webhook secret not configured.'); }
   let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  db.get(`SELECT id FROM webhook_events WHERE stripe_event_id = ?`, [event.id], (err, existing) => {
-    if (err) { console.error('DB Error:', err); return res.status(500).send('Database error'); }
+  try { event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret); } catch 
+(err) { console.error('Webhook signature verification failed:', err.message); return 
+res.status(400).send(`Webhook Error: ${err.message}`); }
+  db.get(`SELECT id FROM webhook_events WHERE stripe_event_id = ?`, [event.id], (err, 
+existing) => {
+    if (err) { console.error('DB Error:', err); return res.status(500).send('Database 
+error'); }
     if (existing) return res.json({ received: true });
-
-    db.run(`INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES (?, ?, ?)`, [event.id, event.type, JSON.stringify(event.data.object)], (err) => { if (err) 
-console.error('Webhook log error:', err); });
-
+    db.run(`INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES 
+(?, ?, ?)`, [event.id, event.type, JSON.stringify(event.data.object)], (err) => { if 
+(err) console.error('Webhook log error:', err); });
     if (event.type === 'checkout.session.completed') {
       const userId = event.data.object.client_reference_id;
-      if (userId) {
-        db.run(`UPDATE users SET is_premium = 1 WHERE id = ?`, [userId], (err) => {
-          if (err) console.error('Failed to upgrade user:', err);
-          else console.log(`User ${userId} upgraded to premium via Stripe webhook.`);
-        });
-      }
+      if (userId) { db.run(`UPDATE users SET is_premium = 1 WHERE id = ?`, [userId], 
+(err) => { if (err) console.error('Failed to upgrade user:', err); }); }
     }
-
     res.json({ received: true });
   });
 });
 
-// ---------------------------------------------------------------------------
-// Static routes
-// ---------------------------------------------------------------------------
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 
+'index.html')));
 
-// ---------------------------------------------------------------------------
-// Global error handler
-// ---------------------------------------------------------------------------
 app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).json({ error: 'Invalid or missing CSRF token. Please refresh the page and try again.' });
-  }
+  if (err.code === 'EBADCSRFTOKEN') return res.status(403).json({ error: 'Invalid or 
+missing CSRF token. Please refresh the page and try again.' });
   console.error('Unhandled Error:', err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Central Alberta Night Life server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => { console.log(`Central Alberta Night Life server running on 
+http://localhost:${PORT}`); });
