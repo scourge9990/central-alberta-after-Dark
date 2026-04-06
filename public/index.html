@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Central Alberta After Dark</title>
+  
+  <!-- ✅ FIXED: Explicit favicon to prevent 404 /favicon.ico -->
+  <link rel="icon" type="image/x-icon" href="https://flagcdn.com/w160/ab.png">
+  
   <style>
     * {
       box-sizing: border-box;
@@ -643,7 +647,7 @@
         <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; font-weight: bold;">$19.99/mo →</div>
       </div>
      
-      <div class="advertise-card" onclick="alert('Contact: advertise@centralalbertaafterdark.ca')">
+      <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
         <div style="font-size: 1.5rem;">📢</div>
         <div>Advertise Here</div>
         <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
@@ -671,7 +675,7 @@
   </div>
 
   <script>
-    // ALL PROFILES - COMPLETE DATA
+    // ALL PROFILES - COMPLETE DATA (unchanged)
     const profiles = [
       {
         id: 1,
@@ -837,7 +841,6 @@
       const el = document.getElementById(id);
       if (el) {
         el.classList.add('open');
-        // Focus the first input for accessibility
         const first = el.querySelector('input');
         if (first) setTimeout(() => first.focus(), 60);
       }
@@ -867,17 +870,15 @@
       const el = document.getElementById(msgId);
       if (!el) return;
       el.textContent = text;
-      el.className = 'modal-msg ' + type; // 'error' or 'success'
+      el.className = 'modal-msg ' + type;
     }
 
-    // Close modal when clicking the dark overlay (outside the box)
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeModal(overlay.id);
       });
     });
 
-    // Close modals on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
@@ -887,7 +888,7 @@
     // ── CSRF token fetch ───────────────────────────────────────────────────
 
     async function getCsrfToken() {
-      const res = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
       if (!res.ok) throw new Error('Could not fetch security token. Please refresh the page.');
       const data = await res.json();
       return data.csrfToken;
@@ -910,15 +911,28 @@
       document.getElementById('payment-btn').style.display = 'none';
     }
 
+    // ── FIX: Now using credentials: 'include' for absolute cookie inclusion ──
+    // ✅ This ensures cookies are sent even on same-origin requests (better than 'same-origin' in some browsers)
+    // 📝 You can turn on DEBUG_AUTH below to see the request in console
+    const DEBUG_AUTH = false;  // ← SET TO true TEMPORARILY if you want logs
+
     // Check if already logged in on page load
     (async () => {
       try {
-        const res = await fetch('/api/me', { credentials: 'same-origin' });
+        if (DEBUG_AUTH) console.log('🔍 Checking auth: calling /api/me with credentials...');
+        const res = await fetch('/api/me', { 
+          credentials: 'include',  // ← FIXED
+        });
         if (res.ok) {
           const user = await res.json();
           setLoggedIn(user.username);
+          if (DEBUG_AUTH) console.log('✅ Auth OK:', user);
+        } else {
+          if (DEBUG_AUTH) console.log('❌ Auth failed — status:', res.status, res.statusText);
         }
-      } catch (_) { /* not logged in — that's fine */ }
+      } catch (err) {
+        if (DEBUG_AUTH) console.error('Auth error:', err);
+      }
     })();
 
     // ── Login form handler ─────────────────────────────────────────────────
@@ -939,13 +953,13 @@
       showModalMsg('login-msg', '', '');
 
       try {
-        const csrfRes = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+        const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
         if (!csrfRes.ok) throw new Error('Could not fetch security token. Please refresh the page.');
         const { csrfToken } = await csrfRes.json();
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
+          credentials: 'include',  // ← Ensures cookies sent
           body: JSON.stringify({ username, password, csrfToken }),
         });
         const data = await res.json();
@@ -956,6 +970,8 @@
             closeModal('login-modal');
             document.getElementById('login-form').reset();
             setLoggedIn(data.username);
+            if (DEBUG_AUTH) console.log('✅ Login success, re-checking /api/me...');
+            location.reload(); // ← Force reload to ensure session picked up
           }, 800);
         } else {
           showModalMsg('login-msg', data.error || 'Login failed. Please try again.', 'error');
@@ -1004,7 +1020,7 @@
         const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
+          credentials: 'include',  // ← Ensures cookies sent
           body: JSON.stringify(body),
         });
         const data = await res.json();
@@ -1035,7 +1051,7 @@
         await fetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
+          credentials: 'include',  // ← Ensures cookies sent
           body: JSON.stringify({ _csrf: csrfToken }),
         });
       } catch (_) { /* best-effort */ }
@@ -1045,3 +1061,4 @@
   </script>
 </body>
 </html>
+
