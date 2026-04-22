@@ -540,12 +540,19 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
 
 app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => {
   try {
-    const { priceId } = req.body;
-    if (!priceId) return res.status(400).json({ error: 'Price ID required.' });
+    // Fetch the price using the lookup key
+    const prices = await stripe.prices.list({ 
+      lookup_keys: ['nightowlpremium'], 
+      expand: ['data.product'] 
+    });
+    
+    if (!prices.data.length) {
+      return res.status(400).json({ error: 'Invalid price lookup key.' });
+    }
     
     const checkoutSession = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: prices.data[0].id, quantity: 1 }],
       mode: 'subscription',
       client_reference_id: String(req.session.userId),
       success_url: `${APP_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
