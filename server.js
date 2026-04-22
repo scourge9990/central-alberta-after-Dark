@@ -92,8 +92,8 @@ app.use(session({
     secure: IS_PRODUCTION,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: IS_PRODUCTION ? 'none' : 'lax',
-    domain: IS_PRODUCTION ? '.centralalbertaafterdark.com' : undefined,
+    sameSite: 'lax',
+    domain: IS_PRODUCTION ? 'centralalbertaafterdark.com' : undefined,
   },
 }));
 
