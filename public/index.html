@@ -763,8 +763,11 @@ centralalbertaafterdarkads@gmail.com')">
 
         const res = await fetch('/api/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, csrfToken }),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({ username, password }),
         });
         const data = await res.json();
         if (res.ok && data.success) {
@@ -804,8 +807,11 @@ centralalbertaafterdarkads@gmail.com')">
 
         const res = await fetch('/api/register', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, username, password, age: age ? parseInt(age, 10) : undefined, csrfToken }),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({ email, username, password, age: age ? parseInt(age, 10) : undefined }),
         });
         const data = await res.json();
         if (res.ok && data.success) {
@@ -877,8 +883,11 @@ centralalbertaafterdarkads@gmail.com')">
         const { csrfToken } = await csrfRes.json();
         const res = await fetch('/api/like/' + id, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ csrfToken }),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         if (data.match) showToast('💛 It\'s a match!');
