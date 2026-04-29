@@ -26,6 +26,7 @@
       position: relative;
       min-height: 100vh;
       padding-bottom: 80px;
+      overflow-x: hidden;
     }
     body::before {
       content: "";
@@ -414,12 +415,26 @@ z-index: 2; }
     }
    
     @media (max-width: 800px) {
-      header { flex-direction: column; gap: 1rem; padding: 1rem; }
-      .flag { width: 80px; }
-      header h1 { font-size: 2.5rem; }
-      header .central { font-size: 2rem; }
-      .auth-block { position: static; margin-top: 1rem; }
+      header {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        min-height: unset;
+      }
+      .flag { width: 60px; }
+      header h1 { font-size: 2rem; }
+      header .central { font-size: 1.75rem; }
+      .auth-block { position: static; margin-top: 0.75rem; justify-content: center; }
       .payment-block { display: none !important; }
+      .app-wrapper {
+        width: 100%;
+        padding: 1rem;
+        gap: 1.5rem;
+      }
+      .main-content {
+        width: 100%;
+        margin: 0 auto;
+      }
     }
 
     /* ── Modal overlay ── */
@@ -548,7 +563,13 @@ z-index: 2; }
       margin-top: 0.15rem;
     }
     @media (max-width: 480px) {
-      .modal-box { padding: 1.5rem 1.2rem 1.4rem; margin: 0 1rem; }
+      .modal-overlay { align-items: center; padding: 0 1rem; }
+      .modal-box {
+        padding: 1.5rem 1.2rem 1.4rem;
+        margin: 0 auto;
+        width: 100%;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
