@@ -571,12 +571,54 @@ z-index: 2; }
         max-width: 100%;
       }
     }
+    /* ── Resend verification section ── */
+    .resend-section {
+      margin-top: 1.5rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(255, 235, 67, 0.25);
+    }
+    .resend-divider {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 0.82rem;
+      color: #aaa;
+      font-family: Arial, sans-serif;
+    }
+    .resend-divider span {
+      background: #003594;
+      padding: 0 0.5rem;
+    }
+    .resend-submit {
+      width: 100%;
+      padding: 0.7rem;
+      background: transparent;
+      color: #FFEB43;
+      border: 2px solid #FFEB43;
+      border-radius: 25px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      margin-top: 0.2rem;
+      transition: background 0.15s, color 0.15s, transform 0.15s;
+    }
+    .resend-submit:hover {
+      background: rgba(255, 235, 67, 0.12);
+      transform: scale(1.02);
+    }
+    .resend-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
   </style>
 </head>
 <body>
+
   <div id="toast"></div>
 
   <!-- ── Login Modal ── -->
+
   <div id="login-modal" class="modal-overlay" role="dialog" aria-modal="true" 
 aria-labelledby="login-modal-title">
     <div class="modal-box">
@@ -599,8 +641,24 @@ In</button>
       </form>
       <div id="login-msg" class="modal-msg"></div>
       <div class="modal-switch">
-        Don't have an account? <a 
+        Don't have an account? <a
 onclick="switchModal('login-modal','signup-modal')">Sign Up</a>
+      </div>
+
+      <div class="resend-section">
+        <div class="resend-divider">
+          <span>Didn't receive your verification email?</span>
+        </div>
+        <div class="modal-field">
+          <label for="resend-email">Your email address</label>
+          <input type="email" id="resend-email" name="resend-email"
+            placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <button type="button" id="resend-btn" class="resend-submit"
+          onclick="handleResendVerification(event)">
+          Resend Verification Email
+        </button>
+        <div id="resend-msg" class="modal-msg"></div>
       </div>
     </div>
   </div>
@@ -1115,7 +1173,59 @@ centralalbertaafterdarkads@gmail.com')">
       }
     }
 
+    // ── Resend Verification Email ──────────────────────────────────────────
+    async function handleResendVerification(e) {
+      e.preventDefault();
+      console.log('[handleResendVerification] Resend button clicked');
+
+      const btn = document.getElementById('resend-btn');
+      const msg = document.getElementById('resend-msg');
+      const email = document.getElementById('resend-email').value.trim();
+
+      msg.className = 'modal-msg';
+      msg.textContent = '';
+
+      if (!email) {
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Please enter your email address.';
+        console.warn('[handleResendVerification] No email provided');
+        return;
+      }
+
+      console.log('[handleResendVerification] Sending resend request for:', email);
+      btn.disabled = true;
+
+      try {
+        const res = await secureFetch('/api/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        console.log('[handleResendVerification] Response status:', res.status);
+        const data = await res.json();
+        console.log('[handleResendVerification] Response body:', data);
+
+        if (res.ok) {
+          msg.className = 'modal-msg success';
+          msg.textContent = 'If that email is registered and unverified, a new verification email has been sent.';
+          document.getElementById('resend-email').value = '';
+        } else {
+          msg.className = 'modal-msg error';
+          msg.textContent = data.error || 'Something went wrong. Please try again.';
+          console.error('[handleResendVerification] Error response:', data.error || data);
+        }
+      } catch (err) {
+        console.error('[handleResendVerification] Network or parse error:', err);
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     // ── Init ───────────────────────────────────────────────────────────────
+
     checkSession();
     loadProfiles();
   </script>
