@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Central Alberta After Dark</title>
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -661,7 +661,24 @@ z-index: 2; }
       cursor: not-allowed;
       transform: none;
     }
-  </style>
+  /* Mobile fixes */
+      @media (max-width: 600px) {
+        body { font-size: 14px; }
+        .profile-row, .profile-card { flex-direction: column !important; text-align: left !important; padding: 8px !important; }
+        .thumbnail { width: 50px !important; height: 50px !important; margin: 0 auto !important; }
+        .info { width: 100% !important; margin-top: 8px !important; text-align: center !important; }
+        .name-age { font-size: 1.1rem !important; }
+        .bio-teaser { font-size: 0.85rem !important; max-height: 2.2em; overflow: hidden; }
+        .buttons { width: 100% !important; margin-top: 8px !important; }
+        .buttons button { flex: 1; font-size: 0.9rem; padding: 8px !important; }
+        #profiles-container { padding: 8px !important; }
+      }
+      @media (max-width: 400px) {
+        body { font-size: 12px; }
+        .profile-row, .profile-card { padding: 6px !important; }
+        .thumbnail { width: 40px !important; height: 40px !important; }
+      }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 </head>
 <body>
 
