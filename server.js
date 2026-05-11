@@ -163,6 +163,13 @@ const upload = multer({
   }
 });
 
+const requireVerified = (req, res, next) => {
+  db.get('SELECT is_verified FROM users WHERE id = ?', [req.session.userId], (err, row) => {
+    if (!row || !row.is_verified) return res.status(403).json({ error: 'ID verification required to chat', verification_required: true });
+    next();
+  });
+};
+
 const requireAuth = (req, res, next) => {
   if (req.session?.userId) {
     next();
@@ -695,6 +702,28 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
+
+// ID verification: submit for review (18+)
+app.post('/api/verify', requireAuth, upload.single('id_doc'), async (req, res) => {
+  const { dob } = req.body;
+  if (!dob) return res.status(400).json({ error: 'Birthdate required' });
+  
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  
+  if (age < 18) return res.status(400).json({ error: 'Must be 18+ to verify' });
+  
+  const idDoc = req.file ? '/uploads/' + req.file.filename : null;
+  db.run('UPDATE profiles SET dob = ?, id_doc = ?, verification_status = ? WHERE user_id = ?', 
+    [dob, idDoc, 'pending', req.session.userId], (err) => {
+    if (err) return res.status(500).json({ error: 'Verification failed' });
+    res.json({ status: 'pending', message: 'Submitted for review. 24-48 hours.' });
+  });
+});
+
 app.post('/api/forgot-password', csrfProtection, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
@@ -1002,7 +1031,7 @@ function generateAiMatchExplanation(user1, user2) {
   return reasons.join('. ');
 }
 
-app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
+app.post('/api/like/:id', requireAuth, requireVerified, csrfProtection, (req, res) => {
   const likedId = parseInt(req.params.id, 10);
   const likerId = req.session.userId;
   if (likedId === likerId) return res.status(400).json({ error: 'Cannot like yourself' });
@@ -1226,7 +1255,7 @@ app.post('/api/ticker', requireAuth, csrfProtection, (req, res) => {
 });
 
 // Chat: Send a message
-app.post('/api/messages', requireAuth, csrfProtection, (req, res) => {
+app.post('/api/messages', requireAuth, requireVerified, csrfProtection, (req, res) => {
   const { receiver_id, message } = req.body;
   const sender_id = req.session.userId;
   
@@ -1248,7 +1277,7 @@ app.post('/api/messages', requireAuth, csrfProtection, (req, res) => {
 });
 
 // Chat: Get conversations (list of users you've messaged with)
-app.get('/api/conversations', requireAuth, (req, res) => {
+app.get('/api/conversations', requireAuth, requireVerified, (req, res) => {
   const userId = req.session.userId;
   
   db.all(`
@@ -1280,7 +1309,7 @@ app.get('/api/conversations', requireAuth, (req, res) => {
 });
 
 // Chat: Get messages with a specific user
-app.get('/api/messages/:partnerId', requireAuth, (req, res) => {
+app.get('/api/messages/:partnerId', requireAuth, requireVerified, (req, res) => {
   const userId = req.session.userId;
   const partnerId = parseInt(req.params.partnerId);
   
@@ -1327,3 +1356,19 @@ const PORT_NUM = parseInt(PORT, 10);
 app.listen(PORT_NUM, () => {
   console.log(`Server listening on port ${PORT_NUM}`);
 });
+
+// Admin: approve/reject verification
+app.post('/api/admin/verify/:userId/:action', requireAdmin, (req, res) => {
+  const { userId, action } = req.params;
+  if (!['approve', 'reject'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+  
+  const is_verified = action === 'approve' ? 1 : 0;
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  
+  db.run('UPDATE users SET is_verified = ? WHERE id = ?', [is_verified, userId], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed' });
+    db.run('UPDATE profiles SET verification_status = ? WHERE user_id = ?', [status, userId]);
+    res.json({ success: true, is_verified, status });
+  });
+});
+
