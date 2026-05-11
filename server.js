@@ -1193,7 +1193,7 @@ app.get('/api/matches', requireAuth, (req, res) => {
 
 // Public ticker: Get recent messages (no auth required)
 app.get('/api/ticker', (req, res) => {
-  db.all(`SELECT * FROM public_ticker ORDER BY created_at DESC LIMIT 20`, [], (err, rows) => {
+  db.all(`SELECT * FROM public_ticker WHERE created_at > datetime('now', '-30 seconds') ORDER BY created_at DESC LIMIT 4`, [], (err, rows) => {
     if (err) {
       console.error('Ticker error:', err);
       return res.status(500).json({ error: 'Failed to get ticker' });
