@@ -1031,7 +1031,7 @@ function generateAiMatchExplanation(user1, user2) {
   return reasons.join('. ');
 }
 
-app.post('/api/like/:id', requireAuth, requireVerified, csrfProtection, (req, res) => {
+app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
   const likedId = parseInt(req.params.id, 10);
   const likerId = req.session.userId;
   if (likedId === likerId) return res.status(400).json({ error: 'Cannot like yourself' });
@@ -1255,7 +1255,7 @@ app.post('/api/ticker', requireAuth, csrfProtection, (req, res) => {
 });
 
 // Chat: Send a message
-app.post('/api/messages', requireAuth, requireVerified, csrfProtection, (req, res) => {
+app.post('/api/messages', requireAuth, csrfProtection, (req, res) => {
   const { receiver_id, message } = req.body;
   const sender_id = req.session.userId;
   
@@ -1277,7 +1277,7 @@ app.post('/api/messages', requireAuth, requireVerified, csrfProtection, (req, re
 });
 
 // Chat: Get conversations (list of users you've messaged with)
-app.get('/api/conversations', requireAuth, requireVerified, (req, res) => {
+app.get('/api/conversations', requireAuth, (req, res) => {
   const userId = req.session.userId;
   
   db.all(`
@@ -1309,7 +1309,7 @@ app.get('/api/conversations', requireAuth, requireVerified, (req, res) => {
 });
 
 // Chat: Get messages with a specific user
-app.get('/api/messages/:partnerId', requireAuth, requireVerified, (req, res) => {
+app.get('/api/messages/:partnerId', requireAuth, (req, res) => {
   const userId = req.session.userId;
   const partnerId = parseInt(req.params.partnerId);
   
