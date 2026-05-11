@@ -238,6 +238,22 @@
     </div>
     
     <div class="card">
+      <h2>🔒 ID Verification</h2>
+      <p style="color:#888;margin-bottom:1rem;">Verify 18+ to unlock messaging</p>
+      <div id="verify-form" style="display:none;">
+        <label>Date of Birth</label>
+        <input type="date" id="verify-dob" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;">
+        <label>Upload ID (driver license/passport)</label>
+        <input type="file" id="verify-id" accept="image/*" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;">
+        <button class="btn btn-primary" onclick="submitVerification()">Submit</button>
+      </div>
+      <div id="verify-status" style="display:none;">
+        <p id="verify-msg" style="padding:0.5rem;border-radius:4px;background:#FFEB43;color:#003594;"></p>
+      </div>
+      <p id="verify-verified" style="display:none;color:#22c55e;font-weight:bold;">✓ Verified</p>
+    </div>
+
+    <div class="card">
       <h2>Premium <span id="premium-badge" class="premium-badge" style="display:none;">★ PREMIUM</span></h2>
       <p style="color:#888;margin-bottom:1rem;">Unlock unlimited likes, super likes, and see who's online now!</p>
       <button class="btn btn-secondary" onclick="upgradePremium()" id="upgrade-btn">Upgrade to Premium</button>
@@ -289,6 +305,15 @@
       document.getElementById('interests').value = currentUser.interests || '';
       document.getElementById('looking_for').value = currentUser.looking_for || '';
       
+      // Show verification UI
+      const vf = document.getElementById('verify-form');
+      const vs = document.getElementById('verify-status');
+      const vmsg = document.getElementById('verify-msg');
+      const vv = document.getElementById('verify-verified');
+      if (currentUser.is_verified) { vf.style.display='none'; vs.style.display='none'; vv.style.display='block'; }
+      else if (currentUser.verification_status === 'pending') { vf.style.display='none'; vs.style.display='block'; vmsg.textContent='⏳ Pending review'; vv.style.display='none'; }
+      else { vf.style.display='block'; vs.style.display='none'; vv.style.display='none'; }
+
       if (currentUser.is_premium) {
         document.getElementById('premium-badge').style.display = 'inline-block';
         document.getElementById('upgrade-btn').textContent = 'Already Premium';
@@ -559,6 +584,18 @@
       }
     }
     
+    async function submitVerification() {
+      const dob = document.getElementById('verify-dob').value;
+      if (!dob) return showToast('Enter birthdate', 'error');
+      const fd = new FormData(); fd.append('dob', dob);
+      const idf = document.getElementById('verify-id').files[0];
+      if (idf) fd.append('id_doc', idf);
+      const res = await fetch('/api/verify', { method:'POST', credentials:'include', body:fd });
+      const d = await res.json();
+      if (res.ok) { showToast(d.message, 'success'); checkSession(); }
+      else { showToast(d.error, 'error'); }
+    }
+
     async function upgradePremium() {
       if (!currentUser) {
         window.location.href = '/';

@@ -804,8 +804,8 @@ app.get('/api/stripe-config', (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
-    `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.created_at,
-            p.interests, p.looking_for, p.photos
+    `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.is_verified, u.created_at,
+            p.interests, p.looking_for, p.photos, p.verification_status
      FROM users u
      LEFT JOIN profiles p ON u.id = p.user_id
      WHERE u.id = ?`,
