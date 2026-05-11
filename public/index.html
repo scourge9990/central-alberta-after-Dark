@@ -311,6 +311,18 @@ z-index: 2; }
       line-height: 1.4;
       margin-top: 0.5rem;
       color: #fff;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      max-height: 3em;
+      overflow: hidden;
+    }
+
+    @media (max-width: 480px) {
+      .bio-teaser { font-size: 0.8rem; max-height: 2.4em; }
+      .thumbnail { width: 60px !important; height: 60px !important; }
+      .profile-row { flex-direction: column !important; align-items: flex-start !important; }
+      .profile-row .info { width: 100% !important; margin-top: 0.5rem; }
+      .profile-row .thumbnail { margin: 0 auto; }
     }
    
     .buttons {
