@@ -798,7 +798,17 @@ app.get('/api/me', requireAuth, (req, res) => {
     (err, user) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       if (!user) return res.status(404).json({ error: 'User not found' });
-      user.photos = user.photos ? JSON.parse(user.photos) : [];
+      // Defensive parse - ensure photos is always a valid array
+      let photos = [];
+      if (user.photos) {
+        try {
+          const parsed = JSON.parse(user.photos);
+          photos = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          photos = [];
+        }
+      }
+      user.photos = photos;
       res.json(user);
     }
   );
@@ -823,9 +833,19 @@ app.get('/api/profiles', requireAuth, (req, res) => {
       users = users.map(u => {
         const lastActive = u.last_active ? new Date(u.last_active).getTime() : 0;
         const isOnline = now - lastActive < 5 * 60 * 1000; // 5 minutes
+        // Defensive parse - ensure photos is always a valid array
+        let photos = [];
+        if (u.photos) {
+          try {
+            const parsed = JSON.parse(u.photos);
+            photos = Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            photos = [];
+          }
+        }
         return {
           ...u,
-          photos: u.photos ? JSON.parse(u.photos) : [],
+          photos: photos,
           online: isOnline
         };
       });
