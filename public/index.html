@@ -229,6 +229,16 @@ z-index: 2; }
       border-style: solid;
       transform: scale(1.02);
     }
+    .ad-cards-container {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .ad-cards-container > .ad-card,
+    .ad-cards-container > .advertise-card {
+      flex: 1;
+      min-width: 0;
+    }
    
     .main-content {
       flex: 1;
@@ -828,14 +838,31 @@ centralalbertaafterdarkads@gmail.com')">
         <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
       </div>
       
-      <!-- Ad card 1 - Central Alberta Markets -->
-      <div class="ad-card" onclick="window.open('https://centralalbertamarkets.com', '_blank')">
-        <img src="/advertisement.jpg" alt="Central Alberta Markets" style="width:100%;height:auto;border-radius:4px;border:2px solid #FFEB43;" />
+      <!-- Ad cards -->
+      <div class="ad-cards-container">
+        <!-- Ad card 1 - Central Alberta Markets -->
+        <div class="ad-card" onclick="window.open('https://centralalbertamarkets.com', '_blank')">
+          <img src="/advertisement.jpg" alt="Central Alberta Markets" style="width:100%;height:auto;border-radius:4px;border:2px solid #FFEB43;" />
+        </div>
+        
+        <!-- Ad card 2 - Treasure Market -->
+        <div class="ad-card" onclick="window.open('https://centralalbertamarkets.com', '_blank')">
+          <img src="/ad-right-top.jpg" alt="Treasure Market" style="width:100%;height:auto;border-radius:4px;border:2px solid #FFEB43;" />
+        </div>
       </div>
       
-      <!-- Ad card 2 - Treasure Market -->
-      <div class="ad-card" onclick="window.open('https://centralalbertamarkets.com', '_blank')">
-        <img src="/ad-right-top.jpg" alt="Treasure Market" style="width:100%;height:auto;border-radius:4px;border:2px solid #FFEB43;" />
+      <!-- More Advertise Here cards -->
+      <div class="ad-cards-container">
+        <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
+          <div style="font-size: 1.5rem;">📢</div>
+          <div>Advertise Here</div>
+          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+        </div>
+        <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
+          <div style="font-size: 1.5rem;">📢</div>
+          <div>Advertise Here</div>
+          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+        </div>
       </div>
     </aside>
 
