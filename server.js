@@ -862,44 +862,31 @@ app.get('/api/profiles', requireAuth, (req, res) => {
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
   const { age, bio, location, shift_schedule, interests, looking_for } = req.body;
   
-  // Handle empty strings as null
-  const ageVal = age && age !== '' ? parseInt(age) : null;
-  const bioVal = bio && bio.trim() ? sanitizeInput(bio) : null;
-  const locVal = location && location.trim() ? sanitizeInput(location) : null;
-  const shiftVal = shift_schedule && shift_schedule.trim() ? sanitizeInput(shift_schedule) : null;
+  // Parse values - empty string clears, non-empty sanitizes
+  const ageVal = (age !== undefined && age !== '') ? parseInt(age) : null;
+  const bioVal = (bio !== undefined && bio !== '') ? sanitizeInput(bio) : null;
+  const locVal = (location !== undefined && location !== '') ? sanitizeInput(location) : null;
+  const shiftVal = (shift_schedule !== undefined && shift_schedule !== '') ? sanitizeInput(shift_schedule) : null;
+  const interestsVal = (interests !== undefined && interests !== '') ? sanitizeInput(interests) : null;
+  const lookingForVal = (looking_for !== undefined && looking_for !== '') ? sanitizeInput(looking_for) : null;
   
+  // Update user table
   db.run(
-    `UPDATE users SET 
-       age = COALESCE(?, age),
-       bio = COALESCE(?, bio), 
-       location = COALESCE(?, location), 
-       shift_schedule = COALESCE(?, shift_schedule) 
-     WHERE id = ?`,
+    `UPDATE users SET age = ?, bio = ?, location = ?, shift_schedule = ? WHERE id = ?`,
     [ageVal, bioVal, locVal, shiftVal, req.session.userId],
-    function(err) {
-      if (err) {
-        console.error('DB Error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      
-      // Ensure profile row exists, then update interests/looking_for
-      db.run(
-        `INSERT OR IGNORE INTO profiles (user_id) VALUES (?)`,
-        [req.session.userId],
-        () => {
-          db.run(
-            `UPDATE profiles SET interests = COALESCE(?, interests), looking_for = COALESCE(?, looking_for) WHERE user_id = ?`,
-            [interests || null, looking_for || null, req.session.userId],
-            (err) => {
-              if (err) console.error('Profile update error:', err);
-            }
-          );
-        }
-      );
-      
-      res.json({ success: true });
-    }
+    (err) => { if (err) console.error('User update error:', err); }
   );
+  
+  // Ensure profile row exists, then update interests/looking_for
+  db.run(`INSERT OR IGNORE INTO profiles (user_id) VALUES (?)`, [req.session.userId], () => {
+    db.run(
+      `UPDATE profiles SET interests = ?, looking_for = ? WHERE user_id = ?`,
+      [interestsVal, lookingForVal, req.session.userId],
+      (err) => { if (err) console.error('Profile update error:', err); }
+    );
+  });
+  
+  res.json({ success: true });
 });
 
 app.get('/api/profiles', (req, res) => {
