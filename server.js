@@ -98,25 +98,27 @@ app.use(helmet({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: 200,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
   skip: (req) => {
-    // Always allow admin IP
-    const ADMIN_IP = '34.136.162.246';
-    return req.ip === ADMIN_IP || req.ip === '127.0.0.1';
+    // Always allow localhost and safe IPs
+    return req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
   },
 });
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
+  max: 5,
   message: { error: 'Too many registration attempts. Try again in an hour.' },
 });
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   message: { error: 'Too many requests from this IP.' },
+  skip: (req) => {
+    return req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+  },
 });
 
 
