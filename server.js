@@ -153,7 +153,11 @@ const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, {
+  maxAge: '1h',
+  cacheControl: true,
+  immutable: false
+}));
 
 // Multer config for photo uploads
 const storage = multer.diskStorage({

@@ -1078,7 +1078,7 @@ centralalbertaafterdarkads@gmail.com')">
 
       container.innerHTML = filtered.map(p => `
         <div class="profile-row" id="profile-${p.id}">
-          <img class="thumbnail" src="${p.image}" alt="${p.name}" />
+          <img class="thumbnail" src="${p.image}?t=${Date.now()}" alt="${p.name}" />
           <div class="info">
             <div class="name-age">${p.name}, ${p.age}</div>
             <div class="location">📍 ${p.location} · ${p.distance}</div>
@@ -1120,7 +1120,7 @@ centralalbertaafterdarkads@gmail.com')">
         const myPhoto = (myData.photos && Array.isArray(myData.photos) && myData.photos[0]?.url) || (myData.photos && Array.isArray(myData.photos) && myData.photos[0]) || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(currentUser);
         container.insertAdjacentHTML('beforeend', `
           <div class="profile-row" style="border:2px solid #FFEB43;">
-            <img class="thumbnail" src="${myPhoto}" alt="${currentUser}" />
+            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser}" />
             <div class="info">
               <div class="name-age">${currentUser}${myData.age ? ', ' + myData.age : ''}
                 <span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="You"></span>
