@@ -100,6 +100,11 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+  skip: (req) => {
+    // Always allow admin IP
+    const ADMIN_IP = '34.136.162.246';
+    return req.ip === ADMIN_IP || req.ip === '127.0.0.1';
+  },
 });
 
 const registerLimiter = rateLimit({
