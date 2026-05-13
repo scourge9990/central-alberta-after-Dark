@@ -23,5 +23,8 @@
     "sqlite3": "^5.1.6",
     "stripe": "^20.4.1",
     "xss": "^1.0.14"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }
