@@ -205,27 +205,31 @@ app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) =>
   const positionX = req.body.positionX || 0;
   const positionY = req.body.positionY || 0;
   
-  // Get current photos
-  db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
-    if (err) {
-      console.log('DB error:', err.message);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    let photos = [];
-    if (row && row.photos) {
-      try { photos = JSON.parse(row.photos); } catch (_) {}
-    }
-    // Add new photo (max 4 photos)
-    if (photos.length >= 4) photos.shift();
-    photos.push({ url: photoUrl, x: positionX, y: positionY });
+  // First ensure profile row exists, then get current photos
+  db.run('INSERT OR IGNORE INTO profiles (user_id) VALUES (?)', [req.session.userId], (err) => {
+    if (err) console.log('Profile create error:', err.message);
     
-    db.run('INSERT OR REPLACE INTO profiles (user_id, photos) VALUES (?, ?)', [req.session.userId, JSON.stringify(photos)], (err) => {
+    db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
       if (err) {
-        console.log('Update error:', err.message);
-        return res.status(500).json({ error: 'Save failed' });
+        console.log('DB error:', err.message);
+        return res.status(500).json({ error: 'Database error' });
       }
-      console.log('Photo saved for user:', req.session.userId);
-      res.json({ url: photoUrl, photos });
+      let photos = [];
+      if (row && row.photos) {
+        try { photos = JSON.parse(row.photos); } catch (_) {}
+      }
+      // Add new photo (max 4 photos)
+      if (photos.length >= 4) photos.shift();
+      photos.push({ url: photoUrl, x: positionX, y: positionY });
+      
+      db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId], (err) => {
+        if (err) {
+          console.log('Update error:', err.message);
+          return res.status(500).json({ error: 'Save failed' });
+        }
+        console.log('Photo saved for user:', req.session.userId, 'photos:', photos);
+        res.json({ url: photoUrl, photos });
+      });
     });
   });
 });
