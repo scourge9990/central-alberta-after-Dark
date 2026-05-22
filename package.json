@@ -1,7 +1,7 @@
 {
-  "name": "central-alberta-shift-workers",
+  "name": "centra-alberta-night-life",
   "version": "1.0.0",
-  "description": "Community platform for shift workers in Central Alberta",
+  "description": "Dating app for night shift workers",
   "main": "server.js",
   "scripts": {
     "start": "sh start.sh"
