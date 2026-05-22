@@ -1341,6 +1341,11 @@ app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ind
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/forgot-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
+app.get('/policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
+app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
+app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('/success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'success.html')));
 app.get('/cancel', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cancel.html')));
 

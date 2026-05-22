@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Central Alberta Shift Workers — Connect. Network. Thrive.</title>
+  <meta name="description" content="The premier community platform for shift workers in Central Alberta. Connect with others who understand your schedule." />
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #003594 url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=60&w=2000') no-repeat center center fixed;
+      background-size: cover;
+      background-position: bottom;
+      color: #FFFFFF;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, rgba(0,53,148,0.7) 0%, rgba(0,53,148,0.95) 100%);
+      z-index: -1;
+    }
+    
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      text-align: center;
+      padding: 3rem 0;
+    }
+    header h1 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 3rem;
+      color: #FFEB43;
+      margin-bottom: 0.5rem;
+      letter-spacing: 2px;
+    }
+    header p {
+      font-size: 1.3rem;
+      color: #ddd;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .flags {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .flags img {
+      width: 100px;
+      border: 2px solid #FFEB43;
+      border-radius: 4px;
+    }
+    
+    .hero {
+      background: rgba(0,53,148,0.9);
+      border: 3px solid #FFEB43;
+      border-radius: 16px;
+      padding: 3rem;
+      text-align: center;
+      margin: 2rem 0;
+    }
+    .hero h2 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2rem;
+      color: #FFEB43;
+      margin-bottom: 1rem;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: #ddd;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+    .cta-btn {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      background: #FFEB43;
+      color: #003594;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    .cta-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(255,235,67,0.5);
+    }
+    
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 3rem 0;
+    }
+    .feature-card {
+      background: linear-gradient(135deg, rgba(0,53,148,0.95), rgba(13,54,146,0.95));
+      border: 2px solid #FFEB43;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .feature-card h3 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.3rem;
+      color: #FFEB43;
+      margin-bottom: 0.75rem;
+    }
+    .feature-card p {
+      color: #ccc;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    
+    .how-it-works {
+      background: rgba(0,53,148,0.9);
+      border: 2px solid #FFEB43;
+      border-radius: 16px;
+      padding: 3rem;
+      margin: 3rem 0;
+    }
+    .how-it-works h2 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2rem;
+      color: #FFEB43;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+    }
+    .step {
+      text-align: center;
+      flex: 1;
+      min-width: 200px;
+      max-width: 250px;
+    }
+    .step-number {
+      width: 50px;
+      height: 50px;
+      background: #FFEB43;
+      color: #003594;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.5rem;
+      margin: 0 auto 1rem;
+    }
+    .step h4 {
+      color: #FFEB43;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .step p {
+      color: #ccc;
+      font-size: 0.9rem;
+    }
+    
+    .pricing {
+      text-align: center;
+      margin: 3rem 0;
+      padding: 2rem;
+      background: rgba(0,53,148,0.9);
+      border: 3px solid #FFEB43;
+      border-radius: 16px;
+    }
+    .pricing h2 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2rem;
+      color: #FFEB43;
+      margin-bottom: 1rem;
+    }
+    .pricing-amount {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .pricing-period {
+      font-size: 1rem;
+      color: #ccc;
+    }
+    .pricing-features {
+      list-style: none;
+      padding: 0;
+      margin: 2rem auto;
+      max-width: 300px;
+      text-align: left;
+    }
+    .pricing-features li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,235,67,0.2);
+      color: #ddd;
+    }
+    .pricing-features li::before {
+      content: "✓ ";
+      color: #FFEB43;
+      font-weight: bold;
+    }
+    
+    .about-section {
+      background: rgba(0,53,148,0.9);
+      border: 2px solid #FFEB43;
+      border-radius: 16px;
+      padding: 3rem;
+      margin: 3rem 0;
+    }
+    .about-section h2 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2rem;
+      color: #FFEB43;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .about-section p {
+      color: #ddd;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 2px solid #FFEB43;
+      margin-top: 2rem;
+    }
+    footer a {
+      color: #FFEB43;
+      text-decoration: none;
+      margin: 0 1rem;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+    footer p {
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+    
+    @media (max-width: 600px) {
+      header h1 { font-size: 2rem; }
+      .hero { padding: 1.5rem; }
+      .features { grid-template-columns: 1fr; }
+      .container { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="flags">
+        <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta Flag" />
+        <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta Flag" />
+      </div>
+      <h1>CENTRAL ALBERTA SHIFT WORKERS</h1>
+      <p>Connect with others who understand your schedule. Build friendships, network, and thrive together — even at 2am.</p>
+    </header>
+    
+    <div class="hero">
+      <h2>🌙 For Shift Workers, By Shift Workers</h2>
+      <p>Working nights and weekends shouldn't mean feeling isolated. Central Alberta Shift Workers brings together nurses, truckers, factory workers, first responders, and all shift workers in our community. Share experiences, make friends, and feel connected — on your schedule.</p>
+      <a href="/" class="cta-btn">Join the Community →</a>
+    </div>
+    
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>Community Chat</h3>
+        <p>Join the conversation in our 24/7 community feed. Share stories, ask questions, and connect with others who get it.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Discover Members</h3>
+        <p>Browse profiles of shift workers in Central Alberta. Filter by interests, location, and schedule to find your kind of people.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <h3>Build Connections</h3>
+        <p>Connect with members who share your interests. Whether it's fishing, gaming, or hitting the gym — find your activity buddies.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📍</div>
+        <h3>Local Community</h3>
+        <p>Built specifically for Central Alberta. Connect with people in Edmonton, Red Deer, and surrounding areas who understand your lifestyle.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🌙</div>
+        <h3>Your Schedule, Your Way</h3>
+        <p>Designed for people who work when others sleep. No more explaining why you can't make Friday night plans.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h3>Premium Features</h3>
+        <p>See who's online now, filter by location, and unlock priority messaging with our premium membership.</p>
+      </div>
+    </div>
+    
+    <div class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h4>Create Your Profile</h4>
+          <p>Sign up in seconds. Tell us about yourself, your shift schedule, and your interests.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h4>Browse & Connect</h4>
+          <p>Discover shift workers in your area. Connect with people who share your interests.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h4>Join the Community</h4>
+          <p>Participate in our live community feed. Make friends, find activity partners, and feel connected.</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="pricing">
+      <h2>Premium Membership</h2>
+      <div class="pricing-amount">$19.99<span class="pricing-period">/month</span></div>
+      <ul class="pricing-features">
+        <li>See who's online now</li>
+        <li>Filter by location radius</li>
+        <li>Priority messaging</li>
+        <li>AI-powered compatibility insights</li>
+        <li>Ad-free experience</li>
+        <li>All features included</li>
+      </ul>
+      <a href="/" class="cta-btn">Get Started</a>
+    </div>
+    
+    <div class="about-section">
+      <h2>About Us</h2>
+      <p>Central Alberta Shift Workers was created to solve a common problem: shift workers often struggle to maintain social connections because their schedules don't align with traditional social activities and businesses.</p>
+      <p>Whether you're a nurse working night shifts, a trucker on long hauls, a factory worker on rotating schedules, or any other shift worker — you deserve a community that understands your lifestyle.</p>
+      <p>Our platform is designed for the unique needs of shift workers. Connect with people who won't judge you for missing events, who celebrate your weird sleep schedule, and who might even want to grab coffee at 8am after your night shift.</p>
+    </div>
+    
+    <footer>
+      <div>
+        <a href="/policy">Terms & Privacy Policy</a>
+        <a href="/product">Product Page</a>
+        <a href="/">Launch App</a>
+      </div>
+      <p>© 2024 Central Alberta Shift Workers. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>
