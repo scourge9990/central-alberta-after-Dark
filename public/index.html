@@ -813,7 +813,7 @@ onclick="switchModal('signup-modal','login-modal')">Log In</a>
     <div class="title-group">
       <h1 class="central">Central</h1>
       <h1>ALBERTA AFTER DARK</h1>
-      <p>Central Alberta night owls, shift workers, and anyone who thinks 2am is 
+      <p>Central Alberta shift workers, night owls, and anyone who thinks 2am is 
 prime time 🌙✨</p>
     </div>
    
@@ -833,12 +833,12 @@ prime time 🌙✨</p>
     <aside class="left-sidebar">
       <div class="sidebar-promote" onclick="startPremiumCheckout()">
 
-        <h3>Unlock Night Owl Perks</h3>
+        <h3>Unlock Shift Worker Perks</h3>
         <ul>
           <li>See who's online now</li>
           <li>Filter by radius</li>
           <li>No ads</li>
-          <li>Priority likes</li>
+          <li>Priority messaging</li>
         </ul>
         <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; 
 font-weight: bold;">$19.99/mo →</div>
@@ -848,7 +848,7 @@ font-weight: bold;">$19.99/mo →</div>
 centralalbertaafterdarkads@gmail.com')">
         <div style="font-size: 1.5rem;">📢</div>
         <div>Advertise Here</div>
-        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Connect with Shift Workers</div>
       </div>
       
       <!-- Ad cards -->
@@ -869,12 +869,12 @@ centralalbertaafterdarkads@gmail.com')">
         <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
           <div style="font-size: 1.5rem;">📢</div>
           <div>Advertise Here</div>
-          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Connect with Shift Workers</div>
         </div>
         <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
           <div style="font-size: 1.5rem;">📢</div>
           <div>Advertise Here</div>
-          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Reach Night Owls</div>
+          <div style="font-size: 0.75rem; margin-top: 0.5rem;">Connect with Shift Workers</div>
         </div>
       </div>
     </aside>
@@ -884,8 +884,8 @@ centralalbertaafterdarkads@gmail.com')">
     </main>
 
     <aside class="right-sidebar">
-      <div class="filter-card active" onclick="setFilter('all')">All Night Owls</div>
-      <div class="filter-card" onclick="setFilter('online')">Up Late. 🌙</div>
+      <div class="filter-card active" onclick="setFilter('all')">All Shift Workers</div>
+      <div class="filter-card" onclick="setFilter('online')">Online Now</div>
       <div class="filter-card locked" onclick="alert('Night Shift filter — Premium feature')">Night Shift 🌙</div>
       <div class="filter-card locked" onclick="alert('Nearby filter — Premium feature')">Nearby 📍</div>
       <div class="filter-card locked" onclick="alert('Road Trip filter — Premium feature')">Road Trip 🛣️</div>
@@ -898,9 +898,16 @@ centralalbertaafterdarkads@gmail.com')">
   <div id="ticker-feed" style="max-height:120px;overflow-y:auto;padding:8px;background:#0a0a15;border-bottom:2px solid #FFEB43;font-size:0.85em;"></div>
   
   <div id="chat-bar">
-    <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
+    <input id="chat-input" type="text" placeholder="Say something to the community… 🌙" maxlength="300" />
     <button id="chat-send" onclick="sendChat()">Send</button>
   </div>
+
+  <footer style="background:rgba(0,53,148,0.95);border-top:2px solid #FFEB43;padding:1rem;text-align:center;font-size:0.85rem;color:#ccc;">
+    <div style="margin-bottom:0.5rem;">
+      <a href="/policy" style="color:#FFEB43;margin:0 1rem;text-decoration:none;">Terms & Privacy Policy</a>
+    </div>
+    <div>© 2024 Central Alberta Shift Workers. All rights reserved.</div>
+  </footer>
 
   <script src="/client.js"></script>
   <script>
@@ -1051,7 +1058,7 @@ centralalbertaafterdarkads@gmail.com')">
         await fetch('/api/logout', { method: 'POST' });
       } catch (_) {}
       setAuthUI(null);
-      showToast('👋 Logged out. Night owl signing off!');
+      showToast('👋 Logged out. See you next shift!');
       loadProfiles();
     }
 
@@ -1154,14 +1161,14 @@ centralalbertaafterdarkads@gmail.com')">
             <div class="info">
               <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}
                 ${p.online ? '<span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Online"></span>' : '<span style="display:inline-block;width:8px;height:8px;background:#6b7280;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Offline"></span>'}
-                ${p.match_score ? '<span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">' + p.match_score + '% match</span>' : ''}
+                ${p.match_score ? '<span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">' + p.match_score + '% compatible</span>' : ''}
               </div>
               ${p.location ? '<div class="location">📍 ' + p.location + '</div>' : ''}
               ${p.bio ? '<div class="bio-teaser">' + p.bio.slice(0, 120) + (p.bio.length > 120 ? '…' : '') + '</div>' : ''}
               <div id="ai-match-${p.id}" style="margin-top:0.5rem;font-size:0.8rem;color:#FFEB43;"></div>
             </div>
             <div class="buttons">
-              ${currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : '<div style="font-size:0.7rem;color:#aaa;margin-bottom:4px;">🔒 Night Owl Premium: Deep matching</div>'}
+              ${currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Compatibility</button>' : '<div style="font-size:0.7rem;color:#aaa;margin-bottom:4px;">🔒 Shift Worker Premium: Deep matching</div>'}
               <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
               <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
@@ -1183,11 +1190,11 @@ centralalbertaafterdarkads@gmail.com')">
         });
         const data = await res.json();
         if (data.premium_required) {
-          container.innerHTML = '<a href="/settings.html" style="color:#FFEB43;">🔒 Upgrade for AI matching</a>';
+          container.innerHTML = '<a href="/settings.html" style="color:#FFEB43;">🔒 Upgrade for AI compatibility</a>';
         } else if (data.explanation) {
           container.innerHTML = '✨ ' + data.explanation;
         } else {
-          container.innerHTML = data.error || 'Could not generate match';
+          container.innerHTML = data.error || 'Could not generate compatibility';
         }
       } catch (e) {
         container.innerHTML = 'Error';
@@ -1203,7 +1210,7 @@ centralalbertaafterdarkads@gmail.com')">
       // For demo profiles (id >= 101), show a fun toast
       const demo = demoProfiles.find(p => p.id === id);
       if (demo) {
-        showToast('❤️ You liked ' + demo.name + '! Sign up to see if it\'s a match.');
+        showToast('❤️ You connected with ' + demo.name + '! Sign up to connect!');
         return;
       }
       // Real profile like via API
@@ -1220,8 +1227,8 @@ centralalbertaafterdarkads@gmail.com')">
             body: JSON.stringify({}),
           });
           const data = await res.json();
-          if (data.match) showToast('💛 It\'s a match!');
-          else showToast('❤️ Liked!');
+          if (data.match) showToast('💛 You\'re now connected!');
+          else showToast('❤️ Connected!');
         } catch (_) {
           showToast('⚠️ Could not send like.');
         }
@@ -1238,7 +1245,7 @@ centralalbertaafterdarkads@gmail.com')">
       }
       const demo = demoProfiles.find(p => p.id === id);
       if (demo) {
-        showToast('✕ Passed on ' + demo.name + '. More night owls await!');
+        showToast('✕ Passed on ' + demo.name + '. More shift workers await!');
       }
     }
 
@@ -1251,7 +1258,7 @@ centralalbertaafterdarkads@gmail.com')">
         return;
       }
       if (!currentUser.isPremium) {
-        showToast('🔒 Night Owl Premium required to chat. Upgrade now!');
+        showToast('🔒 Shift Worker Premium required to chat. Upgrade now!');
         startPremiumCheckout();
         return;
       }
