@@ -1585,7 +1585,9 @@ font-weight: bold;">$19.99/mo →</div>
 
     // ── Init ───────────────────────────────────────────────────────────────
 
-    checkSession().then(() => loadProfiles());
+    document.addEventListener('DOMContentLoaded', () => {
+      checkSession().then(() => loadProfiles());
+    });
     
     // ── Notification Polling ─────────────────────────────────────────────
     let lastNotificationTime = null;
@@ -1625,7 +1627,8 @@ font-weight: bold;">$19.99/mo →</div>
     initCookieBanner();
 
     // ── Footer (shown below main content, not fixed) ────────────────────────
-    document.getElementById('app').insertAdjacentHTML('afterend', `
+    const appEl = document.getElementById('app') || document.body;
+    appEl.insertAdjacentHTML('afterend', `
       <footer class="site-footer" style="position:relative; margin-top:2rem;">
         <span>© 2026 Central Alberta After Dark. All rights reserved.</span>
         <span class="footer-separator">|</span>
