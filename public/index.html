@@ -1264,6 +1264,19 @@ font-weight: bold;">$19.99/mo →</div>
     }
 
     async function loadProfiles() {
+      // Helper to safely extract photo URL
+      function getPhotoUrl(photos, username) {
+        const fallback = 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(username);
+        if (!photos || !Array.isArray(photos) || photos.length === 0) return fallback;
+        const first = photos[0];
+        if (!first) return fallback;
+        // Handle {url: "..."} format
+        if (typeof first === 'object' && first && first.url) return first.url;
+        // Handle plain string URL
+        if (typeof first === 'string' && first.trim()) return first;
+        return fallback;
+      }
+
       // Always render demo profiles first so visitors see content immediately.
       renderProfiles();
 
@@ -1277,7 +1290,7 @@ font-weight: bold;">$19.99/mo →</div>
       }
       if (myData) {
         const container = document.getElementById('profiles-container');
-        const myPhoto = (myData.photos && Array.isArray(myData.photos) && myData.photos[0]?.url) || (myData.photos && Array.isArray(myData.photos) && myData.photos[0]) || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(currentUser);
+        const myPhoto = getPhotoUrl(myData.photos, currentUser);
         container.insertAdjacentHTML('beforeend', `
           <div class="profile-row" style="border:2px solid #FFEB43;">
             <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser}" />
@@ -1310,7 +1323,7 @@ font-weight: bold;">$19.99/mo →</div>
         const container = document.getElementById('profiles-container');
         const realHtml = profiles.map(p => `
           <div class="profile-row">
-            <img class="thumbnail" src="${(p.photos && Array.isArray(p.photos) && p.photos[0]?.url) || (p.photos && Array.isArray(p.photos) && p.photos[0]) || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(p.username)}" alt="${p.username}" />
+            <img class="thumbnail" src="${getPhotoUrl(p.photos, p.username)}?t=${Date.now()}" alt="${p.username}" />
             <div class="info">
               <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}
                 ${p.online ? '<span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Online"></span>' : '<span style="display:inline-block;width:8px;height:8px;background:#6b7280;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Offline"></span>'}

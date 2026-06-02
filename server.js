@@ -936,13 +936,32 @@ app.get('/api/profiles', (req, res) => {
   const currentUserId = req.session?.userId;
   
   db.all(
-    `SELECT id, username, age, location, bio, shift_schedule, interests, looking_for, is_premium FROM users WHERE is_verified = 1 AND (id != ? OR ? IS NULL)`,
+    `SELECT u.id, u.username, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.last_active, u.created_at,
+            p.interests, p.looking_for, p.photos
+     FROM users u
+     LEFT JOIN profiles p ON u.id = p.user_id
+     WHERE u.is_verified = 1 AND (u.id != ? OR ? IS NULL)
+     ORDER BY u.created_at DESC`,
     [currentUserId || null, currentUserId || null],
     (err, rows) => {
       if (err) {
         console.error('DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
+
+      // Parse photos for each profile
+      rows = rows.map(row => {
+        let photos = [];
+        if (row.photos) {
+          try {
+            const parsed = JSON.parse(row.photos);
+            photos = Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            photos = [];
+          }
+        }
+        return { ...row, photos };
+      });
       
       // Get current user for compatibility scoring
       if (currentUserId) {
