@@ -1267,13 +1267,28 @@ font-weight: bold;">$19.99/mo →</div>
       // Helper to safely extract photo URL
       function getPhotoUrl(photos, username) {
         const fallback = 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(username);
-        if (!photos || !Array.isArray(photos) || photos.length === 0) return fallback;
+        console.log('[getPhotoUrl] input photos:', photos, 'username:', username);
+        if (!photos || !Array.isArray(photos) || photos.length === 0) {
+          console.log('[getPhotoUrl] no photos, using fallback');
+          return fallback;
+        }
         const first = photos[0];
-        if (!first) return fallback;
+        console.log('[getPhotoUrl] first photo:', first);
+        if (!first) {
+          console.log('[getPhotoUrl] first is empty, using fallback');
+          return fallback;
+        }
         // Handle {url: "..."} format
-        if (typeof first === 'object' && first && first.url) return first.url;
+        if (typeof first === 'object' && first && first.url) {
+          console.log('[getPhotoUrl] using object.url:', first.url);
+          return first.url;
+        }
         // Handle plain string URL
-        if (typeof first === 'string' && first.trim()) return first;
+        if (typeof first === 'string' && first.trim()) {
+          console.log('[getPhotoUrl] using string URL:', first);
+          return first;
+        }
+        console.log('[getPhotoUrl] no valid URL, using fallback');
         return fallback;
       }
 
@@ -1318,12 +1333,15 @@ font-weight: bold;">$19.99/mo →</div>
           return;
         }
         const profiles = await res.json();
-        console.log('[Profiles] loaded:', profiles.length);
+        console.log('[Profiles] loaded:', profiles.length, 'full data:', JSON.stringify(profiles));
         if (!profiles.length) return;
         const container = document.getElementById('profiles-container');
-        const realHtml = profiles.map(p => `
+        const realHtml = profiles.map(p => {
+          const photoUrl = getPhotoUrl(p.photos, p.username);
+          console.log('[Profiles] Rendering', p.username, 'with photoUrl:', photoUrl, 'photos:', p.photos);
+          return `
           <div class="profile-row">
-            <img class="thumbnail" src="${getPhotoUrl(p.photos, p.username)}?t=${Date.now()}" alt="${p.username}" />
+            <img class="thumbnail" src="${photoUrl}?t=${Date.now()}" alt="${p.username}" />
             <div class="info">
               <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}
                 ${p.online ? '<span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Online"></span>' : '<span style="display:inline-block;width:8px;height:8px;background:#6b7280;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Offline"></span>'}
@@ -1339,7 +1357,7 @@ font-weight: bold;">$19.99/mo →</div>
               <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
           </div>
-        `).join('');
+        `}).join('');
         container.insertAdjacentHTML('beforeend', realHtml);
       } catch (_) {}
     }

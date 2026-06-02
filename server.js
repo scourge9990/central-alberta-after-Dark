@@ -882,7 +882,7 @@ app.get('/api/profiles', requireAuth, (req, res) => {
         const isOnline = now - lastActive < 5 * 60 * 1000; // 5 minutes
         // Defensive parse - ensure photos is always a valid array
         let photos = [];
-        if (u.photos) {
+        if (u.photos !== undefined && u.photos !== null) {
           try {
             const parsed = JSON.parse(u.photos);
             photos = Array.isArray(parsed) ? parsed : [];
@@ -951,12 +951,15 @@ app.get('/api/profiles', (req, res) => {
 
       // Parse photos for each profile
       rows = rows.map(row => {
+        console.log('[Profiles] Row photos raw:', row.photos, 'type:', typeof row.photos);
         let photos = [];
-        if (row.photos) {
+        if (row.photos !== undefined && row.photos !== null) {
           try {
             const parsed = JSON.parse(row.photos);
             photos = Array.isArray(parsed) ? parsed : [];
+            console.log('[Profiles] Parsed photos:', photos);
           } catch (e) {
+            console.log('[Profiles] Parse error:', e.message);
             photos = [];
           }
         }
