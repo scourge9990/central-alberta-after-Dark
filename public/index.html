@@ -709,11 +709,160 @@ z-index: 2; }
       cursor: not-allowed;
       transform: none;
     }
+
+    /* ── Cookie Consent Banner ── */
+    #cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, rgba(0,53,148,0.98), rgba(13,54,146,0.98));
+      border-top: 3px solid #FFEB43;
+      padding: 1rem 2rem;
+      z-index: 9999;
+      display: none;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    }
+    #cookie-banner.show {
+      display: block;
+    }
+    .cookie-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .cookie-text {
+      flex: 1;
+      min-width: 280px;
+      font-size: 0.95rem;
+      color: #ddd;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .cookie-text a {
+      color: #FFEB43;
+      text-decoration: underline;
+    }
+    .cookie-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .cookie-btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      border: 2px solid #fff;
+    }
+    .cookie-btn.accept {
+      background: #FFEB43;
+      color: #003594;
+      border-color: #FFEB43;
+    }
+    .cookie-btn.accept:hover {
+      background: #ffe000;
+      transform: scale(1.05);
+    }
+    .cookie-btn.decline {
+      background: transparent;
+      color: #fff;
+    }
+    .cookie-btn.decline:hover {
+      background: rgba(255,255,255,0.1);
+      transform: scale(1.05);
+    }
+    @media (max-width: 600px) {
+      #cookie-banner {
+        padding: 1rem;
+      }
+      .cookie-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      .cookie-text {
+        min-width: unset;
+      }
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, rgba(0,30,90,0.98), rgba(13,54,146,0.98));
+      border-top: 2px solid #FFEB43;
+      padding: 0.6rem 1rem;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-family: Arial, sans-serif;
+      font-size: 0.75rem;
+      color: #ccc;
+    }
+    .site-footer a {
+      color: #FFEB43;
+      text-decoration: none;
+    }
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+    .footer-separator {
+      color: #FFEB43;
+    }
+
+    /* ── CASL Consent Checkbox ── */
+    .casl-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin: 0.5rem 0 1rem;
+      font-size: 0.8rem;
+      color: #ccc;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+    .casl-consent input[type="checkbox"] {
+      margin-top: 0.15rem;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #FFEB43;
+    }
+    .casl-consent a {
+      color: #FFEB43;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
   <div id="toast"></div>
+
+  <!-- ── Cookie Consent Banner ── -->
+  <div id="cookie-banner" role="dialog" aria-label="Cookie Consent">
+    <div class="cookie-content">
+      <div class="cookie-text">
+        We use cookies to enhance your experience. By continuing to browse, you agree to our 
+        <a href="/privacy.html">Privacy Policy</a> and consent to cookie usage.
+      </div>
+      <div class="cookie-buttons">
+        <button class="cookie-btn decline" onclick="handleCookieConsent(false)">Decline</button>
+        <button class="cookie-btn accept" onclick="handleCookieConsent(true)">Accept All</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Login Modal ── -->
 
@@ -793,6 +942,14 @@ least 8 characters" autocomplete="new-password" required />
 style="color:#aaa;font-weight:normal;">(optional, must be 18+)</span></label>
           <input type="number" id="signup-age" name="age" placeholder="e.g. 28" 
 min="18" max="120" autocomplete="off" />
+        </div>
+        <div class="casl-consent">
+          <input type="checkbox" id="casl-consent" name="casl-consent" required />
+          <label for="casl-consent">
+            I consent to receive electronic communications from Central Alberta After Dark. 
+            I understand I can unsubscribe at any time. 
+            <a href="/terms.html" target="_blank">View Terms</a>
+          </label>
         </div>
         <button type="submit" class="modal-submit" id="signup-submit-btn">Create 
 Account</button>
@@ -1007,6 +1164,7 @@ font-weight: bold;">$19.99/mo →</div>
       const username = document.getElementById('signup-username').value.trim();
       const password = document.getElementById('signup-password').value;
       const age      = document.getElementById('signup-age').value;
+      const caslConsent = document.getElementById('casl-consent').checked;
 
       const btn = document.getElementById('signup-submit-btn');
       const msg = document.getElementById('signup-msg');
@@ -1014,11 +1172,18 @@ font-weight: bold;">$19.99/mo →</div>
       msg.className = 'modal-msg';
       msg.textContent = '';
 
+      if (!caslConsent) {
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Please consent to receive communications to sign up.';
+        btn.disabled = false;
+        return;
+      }
+
       try {
         const res = await secureFetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, username, password, age }),
+          body: JSON.stringify({ email, username, password, age, caslConsent: true }),
         });
 
         const data = await res.json();
@@ -1411,6 +1576,37 @@ font-weight: bold;">$19.99/mo →</div>
     
     // Poll every 5 seconds when logged in
     setInterval(checkNotifications, 5000);
+
+    // ── Cookie Consent ───────────────────────────────────────────────────────
+    function initCookieBanner() {
+      const consent = localStorage.getItem('cookie_consent');
+      if (!consent) {
+        document.getElementById('cookie-banner').classList.add('show');
+      }
+    }
+
+    function handleCookieConsent(accepted) {
+      localStorage.setItem('cookie_consent', accepted ? 'accepted' : 'declined');
+      document.getElementById('cookie-banner').classList.remove('show');
+    }
+
+    // Initialize cookie banner on page load
+    initCookieBanner();
+
+    // ── Footer (shown below main content, not fixed) ────────────────────────
+    document.getElementById('app').insertAdjacentHTML('afterend', `
+      <footer class="site-footer" style="position:relative; margin-top:2rem;">
+        <span>© 2026 Central Alberta After Dark. All rights reserved.</span>
+        <span class="footer-separator">|</span>
+        <a href="/privacy.html">Privacy Policy</a>
+        <span class="footer-separator">|</span>
+        <a href="/terms.html">Terms of Service</a>
+        <span class="footer-separator">|</span>
+        <a href="/accessibility.html">Accessibility</a>
+        <span class="footer-separator">|</span>
+        <a href="/contact.html">Contact Us</a>
+      </footer>
+    `);
   </script>
 </body>
 </html>

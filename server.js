@@ -407,6 +407,45 @@ db.serialize(() => {
   console.log('Database tables initialized.');
 });
 
+// Contact form submission endpoint
+app.post('/api/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Message length validation
+  if (message.length > 2000) {
+    return res.status(400).json({ error: 'Message too long (max 2000 characters)' });
+  }
+
+  // Log the contact request
+  console.log(`[Contact] New contact form submission:`, { name, email, subject });
+
+  // Send notification email if configured
+  if (SMTP_CONFIG.auth.user && SMTP_CONFIG.auth.pass) {
+    sendEmail(
+      FROM_EMAIL,
+      `Contact Form: ${subject} - from ${name}`,
+      `<h2>New Contact Form Submission</h2>
+       <p><strong>Name:</strong> ${name}</p>
+       <p><strong>Email:</strong> ${email}</p>
+       <p><strong>Subject:</strong> ${subject}</p>
+       <p><strong>Message:</strong></p>
+       <p>${message.replace(/\n/g, '<br>')}</p>`
+    );
+  }
+
+  res.json({ success: true });
+});
+
 const xssOptions = { whiteList: {}, stripIgnoreTag: true, stripIgnoreTagBody: ['script', 'style'] };
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
@@ -1342,8 +1381,10 @@ app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/forgot-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
 app.get('/policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
-app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
-app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'policy.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/accessibility', (req, res) => res.sendFile(path.join(__dirname, 'public', 'accessibility.html')));
+app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('/pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('/success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'success.html')));
