@@ -18,7 +18,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 // Stripe configuration
-const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_1TDupAFRLGwNpssTKxUCvsZf';
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || '';
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -30,7 +30,7 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life-secret-key';
+const SESSION_SECRET = process.env.SESSION_SECRET;
 
 const SMTP_CONFIG = {
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -1161,13 +1161,19 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
   if (!stripe) {
     return res.status(503).json({ error: 'Premium checkout is not configured. Please contact support.' });
   }
+  
+  const priceId = STRIPE_PRICE_ID || req.body.priceId;
+  if (!priceId) {
+    return res.status(503).json({ error: 'Premium checkout price ID not configured. Please contact support.' });
+  }
+  
   try {
     console.log('[Stripe] Creating checkout session for user:', req.session.userId);
-    console.log('[Stripe] Price ID:', STRIPE_PRICE_ID);
+    console.log('[Stripe] Price ID:', priceId);
     
     const checkoutSession = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       client_reference_id: String(req.session.userId),
       success_url: `${APP_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,

@@ -1519,7 +1519,7 @@ font-weight: bold;">$19.99/mo →</div>
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
           },
-          body: JSON.stringify({ priceId: 'price_1TDupdFb4zDJmXg6z4aM6s93' }),
+          body: JSON.stringify({ priceId: null }), // Price ID set server-side
         });
         if (!res.ok) {
           const err = await res.json();
