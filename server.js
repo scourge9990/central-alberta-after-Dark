@@ -342,7 +342,7 @@ db.serialize(() => {
 
   newColumns.forEach(sql => {
     db.run(sql, (err) => {
-      if (err && !err.message.includes('duplicate column')) {
+      if (err && !err.message.includes('duplicate column name')) {
         console.error('Migration error:', err.message);
       }
     });
@@ -473,12 +473,16 @@ app.post('/api/register', csrfProtection, [
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 18-120')
 ], async (req, res) => {
+  console.log('[REGISTER] Request received:', { email: req.body.email, username: req.body.username, age: req.body.age });
+  
   // Honeypot check
   if (req.body.website) {
+    console.log('[REGISTER] Honeypot triggered');
     return res.status(400).json({ error: 'Invalid request' });
   }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('[REGISTER] Validation errors:', errors.array());
     return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
   }
   
@@ -486,9 +490,11 @@ app.post('/api/register', csrfProtection, [
   const safeLocation = location ? sanitizeInput(location) : null;
   
   try {
+    console.log('[REGISTER] Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 12);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
+    console.log('[REGISTER] Inserting user into database...');
     // Use serialize to ensure synchronous execution
     db.serialize(() => {
       db.run(
@@ -496,34 +502,39 @@ app.post('/api/register', csrfProtection, [
         [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, verificationToken],
         function(err) {
           if (err) {
+            console.error('[REGISTER] Database error:', err.message);
             if (err.message?.includes('UNIQUE constraint failed')) {
               return res.status(400).json({ error: 'Email or username already taken.' });
             }
-            console.error('DB Error:', err);
             return res.status(500).json({ error: 'Database error' });
           }
           
           const userId = this.lastID;
-          console.log('User created with ID:', userId);
+          console.log('[REGISTER] User created with ID:', userId);
           
           // Create user profile
           db.run(
             `INSERT INTO profiles (user_id) VALUES (?)`,
             [userId],
             (err) => {
-              if (err) console.error('Profile creation error:', err);
+              if (err) console.error('[REGISTER] Profile creation error:', err.message);
+              else console.log('[REGISTER] Profile created for user ID:', userId);
             }
           );
           
           // Only send verification email for real domains (skip test@example.com etc)
           const isTestEmail = /\b(example\.com|test\.com|foo\.com|fake\.com|null)\$/i.test(email);
+          console.log('[REGISTER] Test email check:', { isTestEmail, email });
           if (!isTestEmail) {
             const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
+            console.log('[REGISTER] Sending verification email to:', email);
             sendEmail(
               email,
               'Verify your Central Alberta After Dark account',
               `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging in.</p>`
-            ).catch(err => console.log('Email error:', err.message));
+            ).catch(err => console.log('[REGISTER] Email error:', err.message));
+          } else {
+            console.log('[REGISTER] Skipping email for test domain');
           }
           
           res.status(201).json({ success: true, message: 'Account created!' });
@@ -531,7 +542,7 @@ app.post('/api/register', csrfProtection, [
       );
     });
   } catch (error) {
-    console.error('Server Error:', error);
+    console.error('[REGISTER] Server error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -661,41 +672,53 @@ app.post('/api/login', csrfProtection, [
   body('username').isLength({ min: 3 }).withMessage('Invalid username'),
   body('password').exists().withMessage('Password required')
 ], async (req, res) => {
+  console.log('[LOGIN] Request received for username:', req.body.username);
+  
   // Honeypot check - if website field has any value, it's a bot
   if (req.body.website) {
+    console.log('[LOGIN] Honeypot triggered');
     return res.status(400).json({ error: 'Invalid request' });
   }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('[LOGIN] Validation errors:', errors.array());
     return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
   }
   
   const { username, password } = req.body;
   
+  console.log('[LOGIN] Querying database for user:', username);
   db.get(
     `SELECT id, username, password_hash, is_verified, is_premium, failed_login_attempts, locked_until, last_active FROM users WHERE username = ?`,
     [username],
     async (err, user) => {
       if (err) {
-        console.error('DB Error:', err);
+        console.error('[LOGIN] DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
       if (!user) {
+        console.log('[LOGIN] User not found:', username);
         await bcrypt.hash('dummy', 12);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       
+      console.log('[LOGIN] User found:', { id: user.id, is_verified: user.is_verified, is_premium: user.is_premium });
+      
       const now = Date.now();
       if (user.locked_until && now < user.locked_until) {
+        console.log('[LOGIN] Account locked until:', new Date(user.locked_until));
         return res.status(423).json({ error: `Account locked. Try again in ${(user.locked_until - now)/60000|0} minutes.` });
       }
       if (!user.is_verified) {
+        console.log('[LOGIN] Email not verified for:', username);
         return res.status(403).json({ error: 'Please verify your email address before logging in.' });
       }
       
+      console.log('[LOGIN] Comparing password...');
       try {
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
+          console.log('[LOGIN] Password mismatch for user:', username);
           const newAttempts = (user.failed_login_attempts || 0) + 1;
           const shouldLock = newAttempts >= 5;
           db.run(
@@ -708,15 +731,18 @@ app.post('/api/login', csrfProtection, [
           return res.status(401).json({ error: 'Invalid credentials' });
         }
         
+        console.log('[LOGIN] Password matched! Regenerating session...');
         db.run(`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?`, [user.id]);
         
         req.session.regenerate((err) => {
           if (err) {
-            console.error('Session regeneration error:', err);
+            console.error('[LOGIN] Session regeneration error:', err);
             return res.status(500).json({ error: 'Server error' });
           }
           req.session.userId = user.id;
           req.session.username = user.username;
+          
+          console.log('[LOGIN] Session created for user ID:', user.id);
           
           // Check for new likes since last login
           const lastActive = user.last_active || '1970-01-01';
@@ -730,18 +756,20 @@ app.post('/api/login', csrfProtection, [
             
             const likers = newLikes ? newLikes.map(u => u.username) : [];
             if (likers.length > 0) {
+              console.log('[LOGIN] Success! User has new likes:', likers);
               res.json({ 
                 success: true, 
                 username: user.username,
                 is_premium: user.is_premium 
               });
             } else {
+              console.log('[LOGIN] Success! Logging in user:', user.username);
               res.json({ success: true, username: user.username, is_premium: user.is_premium });
             }
           });
         });
       } catch (error) {
-        console.error('Bcrypt Error:', error);
+        console.error('[LOGIN] Bcrypt Error:', error);
         res.status(500).json({ error: 'Server error' });
       }
     }
