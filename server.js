@@ -438,21 +438,50 @@ app.post('/api/contact', (req, res) => {
   // Log the contact request
   console.log(`[Contact] New contact form submission:`, { name, email, subject });
 
-  // Send notification email if configured
-  if (SMTP_CONFIG.auth.user && SMTP_CONFIG.auth.pass) {
-    sendEmail(
-      FROM_EMAIL,
-      `Contact Form: ${subject} - from ${name}`,
-      `<h2>New Contact Form Submission</h2>
-       <p><strong>Name:</strong> ${name}</p>
-       <p><strong>Email:</strong> ${email}</p>
-       <p><strong>Subject:</strong> ${subject}</p>
-       <p><strong>Message:</strong></p>
-       <p>${message.replace(/\n/g, '<br>')}</p>`
-    );
-  }
-
   res.json({ success: true });
+});
+
+// ── Admin: Wipe Database ────────────────────────────────────────────────────
+app.post('/api/admin/wipe-database', (req, res) => {
+  const secret = req.query.secret;
+  
+  if (secret !== 'cleanwipe') {
+    return res.status(403).json({ error: 'Invalid secret' });
+  }
+  
+  console.log('[Admin] Database wipe requested');
+  
+  const tables = ['matches', 'likes', 'messages', 'profiles', 'public_ticker', 'webhook_events', 'profile_views', 'users'];
+  
+  db.serialize(() => {
+    let completed = 0;
+    
+    tables.forEach(table => {
+      db.run(`DELETE FROM ${table}`, (err) => {
+        if (err) {
+          console.error(`[Admin] Error deleting from ${table}:`, err.message);
+        } else {
+          console.log(`[Admin] Deleted all from: ${table}`);
+        }
+        completed++;
+        
+        if (completed === tables.length) {
+          db.run(`DELETE FROM sqlite_sequence`, () => {
+            console.log('[Admin] Reset auto-increment sequences');
+            try {
+              const sessionsDb = new (require('sqlite3').verbose().Database)(path.join(DATA_DIR, 'sessions.sqlite'));
+              sessionsDb.run('DELETE FROM sessions', () => {
+                sessionsDb.close();
+                res.json({ success: true, message: 'Database wiped successfully' });
+              });
+            } catch (e) {
+              res.json({ success: true, message: 'Database wiped (sessions skipped)' });
+            }
+          });
+        }
+      });
+    });
+  });
 });
 
 const xssOptions = { whiteList: {}, stripIgnoreTag: true, stripIgnoreTagBody: ['script', 'style'] };
