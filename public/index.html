@@ -988,15 +988,16 @@ prime time 🌙✨</p>
     <aside class="left-sidebar">
       <div class="sidebar-promote" onclick="startPremiumCheckout()">
 
-        <h3>Unlock Night Owl Perks</h3>
-        <ul>
-          <li>See who's online now</li>
-          <li>Filter by radius</li>
-          <li>No ads</li>
-          <li>Priority likes</li>
+        <h3>🌟 Night Owl Premium</h3>
+        <ul style="text-align: left; font-size: 0.85rem;">
+          <li>👁️ See who viewed your profile</li>
+          <li>❤️ See who liked you</li>
+          <li>💬 Unlimited messages</li>
+          <li>🚀 Priority placement & boost</li>
+          <li>🚫 Remove all ads</li>
         </ul>
-        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; 
-font-weight: bold;">$19.99/mo →</div>
+        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #FFEB43; font-weight: bold;">$19.99/mo →</div>
+        <div style="font-size: 0.7rem; color: #aaa; margin-top: 0.3rem;">Cancel anytime</div>
       </div>
      
       <div class="advertise-card" onclick="alert('Contact: centralalbertaafterdarkads@gmail.com')">
@@ -1037,13 +1038,13 @@ font-weight: bold;">$19.99/mo →</div>
 
     <aside class="right-sidebar">
       <div class="filter-card active" onclick="setFilter('all')">All Night Owls</div>
-      <div class="filter-card" onclick="setFilter('online')">Up Late. 🌙</div>
-      <div class="filter-card locked" onclick="alert('Night Shift filter — Premium feature')">Night Shift 🌙</div>
-      <div class="filter-card locked" onclick="alert('Nearby filter — Premium feature')">Nearby 📍</div>
-      <div class="filter-card locked" onclick="alert('Road Trip filter — Premium feature')">Road Trip 🛣️</div>
-      <div class="filter-card locked" onclick="alert('Fishing Buddy filter — Premium feature')">Fishing Buddy 🎣⛵</div>
-      <div class="filter-card locked" onclick="alert('Hit the Pub filter — Premium feature')">Hit the Pub 🍺</div>
-      <div class="filter-card locked" onclick="alert('Fur Parents filter — Premium feature')">Fur Parents 🐾</div>
+      <div class="filter-card" onclick="setFilter('online')">🌙 Online Now</div>
+      <div class="filter-card" onclick="setFilter('night_shift')">Night Shift 🌙</div>
+      <div class="filter-card" onclick="setFilter('fishing')">Fishing Buddy 🎣</div>
+      <div class="filter-card" onclick="setFilter('fur_parents')">Fur Parents 🐾</div>
+      <div class="filter-card" onclick="setFilter('road_trip')">Road Trip 🛣️</div>
+      <div class="filter-card" onclick="setFilter('pub')">Hit the Pub 🍺</div>
+      <div id="premium-upgrade-btn" class="filter-card" onclick="startPremiumCheckout()" style="background:linear-gradient(135deg,#FFEB43,#FFA500);color:#003594;font-weight:bold;cursor:pointer;display:none;">🌟 Go Premium!</div>
     </aside>
   </div>
 
@@ -1104,8 +1105,16 @@ font-weight: bold;">$19.99/mo →</div>
           const data = await res.json();
           currentUser = { username: data.username, isPremium: data.is_premium };
           setAuthUI(data.username);
+          updatePremiumButton();
         }
       } catch (_) {}
+    }
+    
+    function updatePremiumButton() {
+      const btn = document.getElementById('premium-upgrade-btn');
+      if (btn) {
+        btn.style.display = currentUser && !currentUser.isPremium ? 'block' : 'none';
+      }
     }
 
     // ── Login ──────────────────────────────────────────────────────────────
@@ -1137,6 +1146,7 @@ font-weight: bold;">$19.99/mo →</div>
           closeModal('login-modal');
           currentUser = { username: data.username, isPremium: data.is_premium };
           setAuthUI(data.username);
+          updatePremiumButton();
           // Check for new likes while away
           if (data.newLikesMessage) {
             showToast(data.newLikesMessage);
@@ -1210,7 +1220,9 @@ font-weight: bold;">$19.99/mo →</div>
       try {
         await fetch('/api/logout', { method: 'POST' });
       } catch (_) {}
+      currentUser = null;
       setAuthUI(null);
+      updatePremiumButton();
       showToast('👋 Logged out. Night owl signing off!');
       loadProfiles();
     }
@@ -1220,7 +1232,7 @@ font-weight: bold;">$19.99/mo →</div>
       currentFilter = f;
       document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
       event.currentTarget.classList.add('active');
-      renderProfiles();
+      loadProfiles();
     }
 
     function renderProfiles() {
@@ -1326,8 +1338,8 @@ font-weight: bold;">$19.99/mo →</div>
 
       // Then load other profiles from API
       try {
-        const res = await fetch('/api/profiles');
-        console.log('[Profiles] status:', res.status, 'ok:', res.ok);
+        const res = await fetch('/api/profiles?filter=' + currentFilter);
+        console.log('[Profiles] status:', res.status, 'ok:', res.ok, 'filter:', currentFilter);
         if (!res.ok) {
           console.log('[Profiles] failed to load');
           return;
@@ -1352,8 +1364,9 @@ font-weight: bold;">$19.99/mo →</div>
               <div id="ai-match-${p.id}" style="margin-top:0.5rem;font-size:0.8rem;color:#FFEB43;"></div>
             </div>
             <div class="buttons">
-              ${currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : '<div style="font-size:0.7rem;color:#aaa;margin-bottom:4px;">🔒 Night Owl Premium: Deep matching</div>'}
+              ${currentUser && currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : '<div style="font-size:0.7rem;color:#FFEB43;margin-bottom:4px;">🔒 Premium: AI Match</div>'}
               <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
+              ${currentUser && !currentUser.isPremium ? '<div style="font-size:0.65rem;color:#aaa;">💬 <a href="/settings" style="color:#FFEB43;">Upgrade to message</a></div>' : ''}
               <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
           </div>

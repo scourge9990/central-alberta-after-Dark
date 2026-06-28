@@ -404,6 +404,15 @@ db.serialize(() => {
     processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS profile_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    viewer_id INTEGER,
+    viewed_id INTEGER,
+    viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(viewer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(viewed_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   console.log('Database tables initialized.');
 });
 
@@ -890,44 +899,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 
 // Get all verified profiles
-app.get('/api/profiles', requireAuth, (req, res) => {
-  // Update last_active for current user
-  db.run('UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE id = ?', [req.session.userId]);
-  
-  db.all(
-    `SELECT u.id, u.username, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.last_active, u.created_at,
-            p.interests, p.looking_for, p.photos
-     FROM users u
-     LEFT JOIN profiles p ON u.id = p.user_id
-     WHERE u.is_verified = 1 AND u.id != ?
-     ORDER BY u.created_at DESC`,
-    [req.session.userId],
-    (err, users) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      const now = Date.now();
-      users = users.map(u => {
-        const lastActive = u.last_active ? new Date(u.last_active).getTime() : 0;
-        const isOnline = now - lastActive < 5 * 60 * 1000; // 5 minutes
-        // Defensive parse - ensure photos is always a valid array
-        let photos = [];
-        if (u.photos !== undefined && u.photos !== null) {
-          try {
-            const parsed = JSON.parse(u.photos);
-            photos = Array.isArray(parsed) ? parsed : [];
-          } catch (e) {
-            photos = [];
-          }
-        }
-        return {
-          ...u,
-          photos: photos,
-          online: isOnline
-        };
-      });
-      res.json(users);
-    }
-  );
-});
+
 
 // Update user profile (including age)
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
@@ -962,15 +934,40 @@ app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
 
 app.get('/api/profiles', (req, res) => {
   const currentUserId = req.session?.userId;
+  const filter = req.query.filter || 'all';
+  
+  let whereClause = 'u.is_verified = 1 AND (u.id != ? OR ? IS NULL)';
+  const params = [currentUserId || null, currentUserId || null];
+  
+  // Apply category filters based on interests/looking_for
+  const categoryFilters = {
+    'night_shift': ['night shift', 'night owl', 'late shift', 'graveyard'],
+    'fishing': ['fishing', 'fish', 'angler', 'outdoors'],
+    'fur_parents': ['pet', 'dog', 'cat', 'puppy', 'kitten', 'fur baby', 'animal'],
+    'road_trip': ['road trip', 'travel', 'adventure', 'explore', 'roadtrip'],
+    'pub': ['pub', 'brewery', 'beer', 'drinks', 'nightlife', 'bar']
+  };
+  
+  if (categoryFilters[filter]) {
+    const keywords = categoryFilters[filter].map(k => k.toLowerCase());
+    whereClause += ` AND (LOWER(p.interests || ' ' || COALESCE(p.looking_for, '') || ' ' || COALESCE(u.bio, '')) LIKE ?)`;
+    const likePattern = '%' + keywords.join('%') + '%';
+    params.push(likePattern);
+  }
+  
+  // Online filter - users active in last 5 minutes
+  if (filter === 'online') {
+    whereClause += ` AND u.last_active > datetime('now', '-5 minutes')`;
+  }
   
   db.all(
     `SELECT u.id, u.username, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.last_active, u.created_at,
             p.interests, p.looking_for, p.photos
      FROM users u
      LEFT JOIN profiles p ON u.id = p.user_id
-     WHERE u.is_verified = 1 AND (u.id != ? OR ? IS NULL)
-     ORDER BY u.created_at DESC`,
-    [currentUserId || null, currentUserId || null],
+     WHERE ${whereClause}
+     ORDER BY u.is_premium DESC, u.created_at DESC`,
+    params,
     (err, rows) => {
       if (err) {
         console.error('DB Error:', err);
@@ -979,26 +976,26 @@ app.get('/api/profiles', (req, res) => {
 
       // Parse photos for each profile
       rows = rows.map(row => {
-        console.log('[Profiles] Row photos raw:', row.photos, 'type:', typeof row.photos);
         let photos = [];
         if (row.photos !== undefined && row.photos !== null) {
           try {
             const parsed = JSON.parse(row.photos);
             photos = Array.isArray(parsed) ? parsed : [];
-            console.log('[Profiles] Parsed photos:', photos);
           } catch (e) {
-            console.log('[Profiles] Parse error:', e.message);
             photos = [];
           }
         }
-        return { ...row, photos };
+        
+        // Determine if user is online (active in last 5 minutes)
+        const isOnline = row.last_active && new Date(row.last_active) > new Date(Date.now() - 5 * 60 * 1000);
+        
+        return { ...row, photos, online: !!isOnline };
       });
       
       // Get current user for compatibility scoring
       if (currentUserId) {
         db.get(`SELECT * FROM users WHERE id = ?`, [currentUserId], (err, currentUser) => {
           if (currentUser) {
-            // Calculate compatibility for each profile
             rows = rows.map(profile => ({
               ...profile,
               match_score: calculateCompatibility(currentUser, profile)
@@ -1349,26 +1346,37 @@ app.post('/api/ticker', requireAuth, csrfProtection, (req, res) => {
     });
 });
 
-// Chat: Send a message
+// Chat: Send a message (Premium only)
 app.post('/api/messages', requireAuth, csrfProtection, (req, res) => {
   const { receiver_id, message } = req.body;
   const sender_id = req.session.userId;
   
-  if (!receiver_id || !message) {
-    return res.status(400).json({ error: 'receiver_id and message required' });
-  }
-  if (message.length > 1000) {
-    return res.status(400).json({ error: 'Message too long (max 1000 chars)' });
-  }
-  
-  db.run(`INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)`,
-    [sender_id, receiver_id, message], function(err) {
-      if (err) {
-        console.error('Message send error:', err);
-        return res.status(500).json({ error: 'Failed to send message' });
-      }
-      res.json({ success: true, message: 'Message sent!', message_id: this.lastID });
-    });
+  // Check if user is premium
+  db.get(`SELECT is_premium FROM users WHERE id = ?`, [sender_id], (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: 'Server error' });
+    }
+    
+    if (!row.is_premium) {
+      return res.status(403).json({ premium_required: true, error: 'Night Owl Premium required to send messages' });
+    }
+    
+    if (!receiver_id || !message) {
+      return res.status(400).json({ error: 'receiver_id and message required' });
+    }
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Message too long (max 1000 chars)' });
+    }
+    
+    db.run(`INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)`,
+      [sender_id, receiver_id, message], function(err) {
+        if (err) {
+          console.error('Message send error:', err);
+          return res.status(500).json({ error: 'Failed to send message' });
+        }
+        res.json({ success: true, message: 'Message sent!', message_id: this.lastID });
+      });
+  });
 });
 
 // Chat: Get conversations (list of users you've messaged with)
@@ -1427,6 +1435,74 @@ app.get('/api/messages/:partnerId', requireAuth, (req, res) => {
     db.run(`UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0`,
       [partnerId, userId], () => {});
     res.json({ messages: rows || [] });
+  });
+});
+
+// Get profile views (Premium only)
+app.get('/api/profile-views', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  
+  db.get(`SELECT is_premium FROM users WHERE id = ?`, [userId], (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: 'Server error' });
+    }
+    
+    if (!row.is_premium) {
+      return res.status(403).json({ premium_required: true, error: 'Night Owl Premium required' });
+    }
+    
+    db.all(`
+      SELECT pv.viewed_at, u.id as viewer_id, u.username, u.location, u.age, u.bio
+      FROM profile_views pv
+      JOIN users u ON u.id = pv.viewer_id
+      WHERE pv.viewed_id = ?
+      ORDER BY pv.viewed_at DESC
+      LIMIT 50
+    `, [userId], (err, rows) => {
+      if (err) {
+        console.error('Profile views error:', err);
+        return res.status(500).json({ error: 'Failed to get profile views' });
+      }
+      res.json({ views: rows || [] });
+    });
+  });
+});
+
+// Get who liked you (Premium only)
+app.get('/api/who-liked-me', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  
+  db.get(`SELECT is_premium FROM users WHERE id = ?`, [userId], (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: 'Server error' });
+    }
+    
+    if (!row.is_premium) {
+      return res.status(403).json({ premium_required: true, error: 'Night Owl Premium required' });
+    }
+    
+    db.all(`
+      SELECT l.created_at as liked_at, u.id, u.username, u.location, u.age, u.bio, p.photos
+      FROM likes l
+      JOIN users u ON u.id = l.liker_id
+      LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE l.liked_id = ?
+      ORDER BY l.created_at DESC
+    `, [userId], (err, rows) => {
+      if (err) {
+        console.error('Likes error:', err);
+        return res.status(500).json({ error: 'Failed to get likes' });
+      }
+      // Parse photos
+      rows = rows.map(r => {
+        let photos = [];
+        if (r.photos) {
+          try { photos = JSON.parse(r.photos); } catch (_) {}
+        }
+        return { ...r, photos };
+      });
+      res.json({ likes: rows || [] });
+    });
   });
 });
 
