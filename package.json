@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.10.0",
     "connect-sqlite3": "^0.9.13",
     "cookie": "^1.1.1",
     "cookie-parser": "^1.4.7",

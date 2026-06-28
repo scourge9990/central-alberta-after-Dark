@@ -13,9 +13,17 @@ const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dnwuyulhb',
+  api_key: process.env.CLOUDINARY_API_KEY || '361568872865477',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'OGwFXokGmg1Qr8nzH8qKoK-h7sI'
+});
 
 // Stripe configuration
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
@@ -200,42 +208,54 @@ app.delete('/api/photos/:index', requireAuth, (req, res) => {
   });
 });
 
-// Photo upload endpoint
+// Photo upload endpoint - uses Cloudinary
 app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) => {
-  console.log('Upload for user:', req.session?.userId, 'file:', req.file?.filename);
+  console.log('Upload for user:', req.session?.userId, 'file:', req.file?.originalname);
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   
-  const photoUrl = '/uploads/' + req.file.filename;
   const positionX = req.body.positionX || 0;
   const positionY = req.body.positionY || 0;
   
-  // First ensure profile row exists, then get current photos
-  db.run('INSERT OR IGNORE INTO profiles (user_id) VALUES (?)', [req.session.userId], (err) => {
-    if (err) console.log('Profile create error:', err.message);
-    
-    db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
-      if (err) {
-        console.log('DB error:', err.message);
-        return res.status(500).json({ error: 'Database error' });
+  // Upload to Cloudinary
+  cloudinary.uploader.upload_stream(
+    { folder: 'central-alberta-after-dark', resource_type: 'image' },
+    (error, result) => {
+      if (error) {
+        console.log('Cloudinary error:', error);
+        return res.status(500).json({ error: 'Upload failed' });
       }
-      let photos = [];
-      if (row && row.photos) {
-        try { photos = JSON.parse(row.photos); } catch (_) {}
-      }
-      // Add new photo (max 4 photos)
-      if (photos.length >= 4) photos.shift();
-      photos.push({ url: photoUrl, x: positionX, y: positionY });
       
-      db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId], (err) => {
-        if (err) {
-          console.log('Update error:', err.message);
-          return res.status(500).json({ error: 'Save failed' });
-        }
-        console.log('Photo saved for user:', req.session.userId, 'photos:', photos);
-        res.json({ url: photoUrl, photos });
+      const photoUrl = result.secure_url;
+      
+      // First ensure profile row exists, then get current photos
+      db.run('INSERT OR IGNORE INTO profiles (user_id) VALUES (?)', [req.session.userId], (err) => {
+        if (err) console.log('Profile create error:', err.message);
+        
+        db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
+          if (err) {
+            console.log('DB error:', err.message);
+            return res.status(500).json({ error: 'Database error' });
+          }
+          let photos = [];
+          if (row && row.photos) {
+            try { photos = JSON.parse(row.photos); } catch (_) {}
+          }
+          // Add new photo (max 4 photos)
+          if (photos.length >= 4) photos.shift();
+          photos.push({ url: photoUrl, x: positionX, y: positionY });
+          
+          db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId], (err) => {
+            if (err) {
+              console.log('Update error:', err.message);
+              return res.status(500).json({ error: 'Save failed' });
+            }
+            console.log('Photo saved for user:', req.session.userId, 'photos:', photos);
+            res.json({ url: photoUrl, photos });
+          });
+        });
       });
-    });
-  });
+    }
+  ).end(req.file.buffer);
 });
 
 // Admin: Delete test users
