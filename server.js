@@ -167,13 +167,9 @@ app.use('/uploads', express.static(uploadsDir, {
   immutable: false
 }));
 
-// Multer config for photo uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.random().toString(36).slice(2) + path.extname(file.originalname))
-});
+// Multer config for photo uploads (memory storage for Cloudinary)
 const upload = multer({ 
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp/i;
@@ -210,7 +206,7 @@ app.delete('/api/photos/:index', requireAuth, (req, res) => {
 
 // Photo upload endpoint - uses Cloudinary
 app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) => {
-  console.log('Upload for user:', req.session?.userId, 'file:', req.file?.originalname);
+  console.log('[Photo] Upload for user:', req.session?.userId, 'file:', req.file?.originalname, 'size:', req.file?.size);
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   
   const positionX = req.body.positionX || 0;
@@ -221,10 +217,11 @@ app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) =>
     { folder: 'central-alberta-after-dark', resource_type: 'image' },
     (error, result) => {
       if (error) {
-        console.log('Cloudinary error:', error);
-        return res.status(500).json({ error: 'Upload failed' });
+        console.error('[Cloudinary] Upload error:', error);
+        return res.status(500).json({ error: 'Upload failed: ' + (error.message || 'Unknown error') });
       }
       
+      console.log('[Cloudinary] Upload success:', result.secure_url);
       const photoUrl = result.secure_url;
       
       // First ensure profile row exists, then get current photos
