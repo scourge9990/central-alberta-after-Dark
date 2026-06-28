@@ -1364,9 +1364,8 @@ prime time 🌙✨</p>
               <div id="ai-match-${p.id}" style="margin-top:0.5rem;font-size:0.8rem;color:#FFEB43;"></div>
             </div>
             <div class="buttons">
-              ${currentUser && currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : '<div style="font-size:0.7rem;color:#FFEB43;margin-bottom:4px;">🔒 Premium: AI Match</div>'}
+              ${currentUser ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : ''}
               <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
-              ${currentUser && !currentUser.isPremium ? '<div style="font-size:0.65rem;color:#aaa;">💬 <a href="/settings" style="color:#FFEB43;">Upgrade to message</a></div>' : ''}
               <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
           </div>
@@ -1386,9 +1385,7 @@ prime time 🌙✨</p>
           body: JSON.stringify({ target_id: profileId })
         });
         const data = await res.json();
-        if (data.premium_required) {
-          container.innerHTML = '<a href="/settings.html" style="color:#FFEB43;">🔒 Upgrade for AI matching</a>';
-        } else if (data.explanation) {
+        if (data.explanation) {
           container.innerHTML = '✨ ' + data.explanation;
         } else {
           container.innerHTML = data.error || 'Could not generate match';

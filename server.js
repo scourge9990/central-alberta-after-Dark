@@ -1095,15 +1095,11 @@ function calculateCompatibility(user1, user2) {
   return factors > 0 ? Math.min(100, Math.round(score)) : null;
 }
 
-// AI Match endpoint (premium only)
+// AI Match endpoint
 app.post('/api/ai-match', requireAuth, csrfProtection, async (req, res) => {
   const targetId = req.body.target_id;
   if (!targetId) return res.status(400).json({ error: 'Target required' });
   
-  // Check premium
-  if (!req.session.isPremium) {
-    return res.status(403).json({ error: 'Premium required', premium_required: true });
-  }
   
   try {
     const target = await new Promise((resolve, reject) => {
