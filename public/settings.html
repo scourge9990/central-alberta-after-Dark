@@ -621,29 +621,7 @@
     }
     
     async function upgradePremium() {
-      if (!currentUser) {
-        window.location.href = '/';
-        return;
-      }
-      try {
-        const csrf = await getCsrfToken();
-        const res = await fetch('/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrf,
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          alert('Error: ' + (data.error || 'Could not start checkout'));
-        }
-      } catch (e) {
-        alert('Error starting checkout');
-      }
+      alert('🌟 Night Owl Premium coming soon! Stripe integration in progress. You\'ll be able to upgrade soon!');
     }
     
     function logout() {

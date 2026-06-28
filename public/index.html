@@ -1513,37 +1513,7 @@ prime time 🌙✨</p>
 
     // ── Premium checkout ───────────────────────────────────────────────────
     async function startPremiumCheckout() {
-      if (!currentUser) {
-        alert('Please log in first to upgrade to premium.');
-        return;
-      }
-      try {
-        const csrfRes = await fetch('/api/csrf-token');
-        const { csrfToken } = await csrfRes.json();
-
-        const res = await fetch('/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-          },
-          body: JSON.stringify({ priceId: null }), // Price ID set server-side
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          alert('Error: ' + (err.error || 'Failed to create checkout session'));
-          return;
-        }
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          alert('Checkout unavailable. Please contact support.');
-        }
-      } catch (err) {
-        console.error('Checkout error:', err);
-        alert('Failed to start checkout. Please try again.');
-      }
+      alert('🌟 Night Owl Premium coming soon! Stripe integration in progress. You\'ll be able to upgrade soon!');
     }
 
     // ── Resend Verification Email ──────────────────────────────────────────
