@@ -130,8 +130,8 @@ const apiLimiter = rateLimit({
 });
 
 
-// Webhook BEFORE rate limiting and body parsing
-app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
+// Webhook BEFORE rate limiting and body parsing (needs raw body for signature verification)
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 
 app.use('/api/login', loginLimiter);
 app.use('/api/register', registerLimiter);
@@ -345,7 +345,8 @@ db.serialize(() => {
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until INTEGER,
     last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    stripe_customer_id TEXT
   )`);
 
   const newColumns = [
@@ -355,6 +356,7 @@ db.serialize(() => {
     `ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN locked_until INTEGER`,
     `ALTER TABLE users ADD COLUMN last_active DATETIME`,
+    `ALTER TABLE users ADD COLUMN stripe_customer_id TEXT`,
   ];
 
   newColumns.forEach(sql => {
@@ -1256,12 +1258,19 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
   }
 });
 
-app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint active')); app.post('/api/webhook/stripe', (req, res) => {
+// Stripe webhook endpoint (both GET and POST)
+app.get('/webhook/stripe', (req, res) => {
+  res.send('Stripe webhook endpoint active');
+});
+
+app.post('/webhook/stripe', (req, res) => {
   console.log('[Webhook] Received stripe webhook');
+  
   if (!stripe) {
     console.error('Stripe not configured — webhook disabled.');
     return res.status(503).send('Stripe not configured.');
   }
+  
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
@@ -1278,6 +1287,9 @@ app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint a
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
   
+  console.log('[Webhook] Event type:', event.type);
+  
+  // Check for duplicate event
   db.get(
     `SELECT id FROM webhook_events WHERE stripe_event_id = ?`,
     [event.id],
@@ -1286,8 +1298,12 @@ app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint a
         console.error('DB Error:', err);
         return res.status(500).send('Database error');
       }
-      if (existing) return res.json({ received: true });
+      if (existing) {
+        console.log('[Webhook] Duplicate event, skipping:', event.id);
+        return res.json({ received: true, duplicate: true });
+      }
       
+      // Log the event
       db.run(
         `INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES (?, ?, ?)`,
         [event.id, event.type, JSON.stringify(event.data.object)],
@@ -1296,13 +1312,42 @@ app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint a
         }
       );
       
+      // Handle checkout.session.completed
       if (event.type === 'checkout.session.completed') {
         const userId = event.data.object.client_reference_id;
+        const customerId = event.data.object.customer;
+        const subscriptionId = event.data.object.subscription;
+        console.log('[Webhook] Checkout completed for user:', userId, 'customer:', customerId, 'subscription:', subscriptionId);
         if (userId) {
-          db.run(`UPDATE users SET is_premium = 1 WHERE id = ?`, [userId], (err) => {
+          db.run(`UPDATE users SET is_premium = 1, stripe_customer_id = ? WHERE id = ?`, [customerId, userId], (err) => {
             if (err) console.error('Failed to upgrade user:', err);
           });
         }
+      }
+      
+      // Handle subscription renewal - invoice.payment_succeeded
+      if (event.type === 'invoice.payment_succeeded') {
+        const subscriptionId = event.data.object.subscription;
+        const customerId = event.data.object.customer;
+        console.log('[Webhook] Payment succeeded for subscription:', subscriptionId);
+        // Find user by stripe customer id and extend premium
+        db.get(`SELECT user_id FROM users WHERE stripe_customer_id = ?`, [customerId], (err, row) => {
+          if (err) console.error('Error finding user:', err);
+          if (row) {
+            db.run(`UPDATE users SET is_premium = 1 WHERE id = ?`, [row.user_id], (e) => {
+              if (e) console.error('Failed to extend premium:', e);
+            });
+          }
+        });
+      }
+      
+      // Handle subscription cancellation - customer.subscription.deleted
+      if (event.type === 'customer.subscription.deleted') {
+        const customerId = event.data.object.customer;
+        console.log('[Webhook] Subscription cancelled for customer:', customerId);
+        db.run(`UPDATE users SET is_premium = 0 WHERE stripe_customer_id = ?`, [customerId], (err) => {
+          if (err) console.error('Failed to revoke premium:', err);
+        });
       }
       
       res.json({ received: true });

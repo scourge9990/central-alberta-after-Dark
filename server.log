@@ -8,3 +8,5 @@
 Database tables initialized.
 Server listening on port 3000
 Connected to SQLite database.
+[Webhook] Received stripe webhook
+Stripe not configured — webhook disabled.
