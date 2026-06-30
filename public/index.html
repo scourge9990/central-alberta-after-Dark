@@ -424,7 +424,6 @@ z-index: 2; }
       min-width: 110px;
     }
     .my-profile-btn:hover { transform: scale(1.08); background: #7d3c98; box-shadow: 0 0 12px rgba(255, 235, 67, 0.5); }
-    .like-btn:disabled { background: #666; opacity: 0.5; cursor: not-allowed; }
    
     #chat-bar {
       position: fixed;
@@ -987,6 +986,25 @@ onclick="switchModal('signup-modal','login-modal')">Log In</a>
     </div>
   </div>
 
+  <!-- ── Premium Upgrade Modal ── -->
+  <div id="premium-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-box" style="text-align: center;">
+      <button class="modal-close" onclick="closeModal('premium-modal')" aria-label="Close">✕</button>
+      <h2 style="color: #FFEB43; margin-bottom: 1rem;">🌟 Night Owl Premium</h2>
+      <p style="color: #ccc; margin-bottom: 1.5rem;">Unlock exclusive features to connect with fellow night owls!</p>
+      <ul style="text-align: left; color: #fff; list-style: none; padding: 0; margin-bottom: 1.5rem;">
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #333;">👁️ See who viewed your profile</li>
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #333;">❤️ See who liked you</li>
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #333;">💬 Unlimited direct messages</li>
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #333;">🚀 Priority placement & boost</li>
+        <li style="padding: 0.5rem 0;">🚫 Remove all ads</li>
+      </ul>
+      <div style="font-size: 2rem; color: #FFEB43; font-weight: bold; margin-bottom: 1rem;">$19.99/mo</div>
+      <button class="modal-submit" onclick="startPremiumCheckout(); closeModal('premium-modal');">Upgrade Now</button>
+      <div style="margin-top: 1rem; font-size: 0.8rem; color: #888;">Cancel anytime • No hidden fees</div>
+    </div>
+  </div>
+
   <header>
     <span class="header-maintenance-notice">Site maintenance occurs every other Monday.</span>
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag">
@@ -1078,7 +1096,7 @@ prime time 🌙✨</p>
     </aside>
   </div>
 
-  <div id="ticker-feed" style="max-height:120px;overflow-y:auto;padding:8px;background:#0a0a15;border-bottom:2px solid #FFEB43;font-size:0.85em;"></div>
+  <div id="ticker-feed"></div>
   
   <div id="chat-bar">
     <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
@@ -1090,6 +1108,7 @@ prime time 🌙✨</p>
     // ── State ──────────────────────────────────────────────────────────────
     let currentFilter = 'all';
     let currentUser = null;
+    let currentUserId = null;
 
     // ── Demo Profiles ──────────────────────────────────────────────────────
     const demoProfiles = []; // Loaded from API
@@ -1133,7 +1152,8 @@ prime time 🌙✨</p>
         const res = await fetch('/api/me');
         if (res.ok) {
           const data = await res.json();
-          currentUser = { username: data.username, isPremium: data.is_premium };
+          currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
+          currentUserId = data.id;
           setAuthUI(data.username);
           updatePremiumButton();
         }
@@ -1174,7 +1194,8 @@ prime time 🌙✨</p>
         const data = await res.json();
         if (res.ok && data.success) {
           closeModal('login-modal');
-          currentUser = { username: data.username, isPremium: data.is_premium };
+          currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
+          currentUserId = data.id;
           setAuthUI(data.username);
           updatePremiumButton();
           // Check for new likes while away
@@ -1251,6 +1272,7 @@ prime time 🌙✨</p>
         await fetch('/api/logout', { method: 'POST' });
       } catch (_) {}
       currentUser = null;
+      currentUserId = null;
       setAuthUI(null);
       updatePremiumButton();
       showToast('👋 Logged out. Night owl signing off!');
@@ -1298,8 +1320,8 @@ prime time 🌙✨</p>
             <div class="interests">${p.interests.join(' ')}</div>
           </div>
           <div class="buttons">
-            <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
-            <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
+            <button class="chat-btn" onclick="openChat(${p.id}, '${p.name}')">Chat</button>
+            <button class="ignore-btn" onclick="ignoreProfile(${p.id})">Ignore</button>
           </div>
         </div>
       `).join('');
@@ -1360,7 +1382,7 @@ prime time 🌙✨</p>
               ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
             </div>
             <div class="buttons">
-              <button class="like-btn" onclick="location.href='/settings.html'">👤 My Profile</button>
+              <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
             </div>
           </div>
         `);
@@ -1393,8 +1415,8 @@ prime time 🌙✨</p>
               ${p.bio ? '<div class="bio-teaser">' + p.bio.slice(0, 120) + (p.bio.length > 120 ? '…' : '') + '</div>' : ''}
             </div>
             <div class="buttons">
-              <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
-              <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
+              <button class="chat-btn" onclick="openChat(${p.id}, '${p.username}')">Chat</button>
+              <button class="ignore-btn" onclick="ignoreProfile(${p.id})">Ignore</button>
             </div>
           </div>
         `}).join('');
@@ -1402,40 +1424,27 @@ prime time 🌙✨</p>
       } catch (_) {}
     }
 
-    function likeProfile(id) {
+    // ── Chat & Ignore Functions ───────────────────────────────────────────────
+    
+    // Open direct message chat with a user
+    function openChat(userId, username) {
       if (!currentUser) {
         openModal('login-modal');
-        showToast('🌙 Sign up or log in to like profiles!');
+        showToast('🌙 Sign up to chat!');
         return;
       }
-      // For demo profiles (id >= 101), show a fun toast
-      const demo = demoProfiles.find(p => p.id === id);
-      if (demo) {
-        showToast('❤️ You liked ' + demo.name + '! Sign up to see more.');
+      // Show premium prompt for non-premium users
+      if (!currentUser.isPremium) {
+        showToast('🌟 Night Owl Premium required for messaging!');
+        openModal('premium-modal');
         return;
       }
-      // Real profile like via API
-      (async () => {
-        try {
-          const csrfRes = await fetch('/api/csrf-token');
-          const { csrfToken } = await csrfRes.json();
-          const res = await fetch('/api/like/' + id, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken,
-            },
-            body: JSON.stringify({}),
-          });
-          const data = await res.json();
-          showToast('❤️ Liked!');
-        } catch (_) {
-          showToast('⚠️ Could not send like.');
-        }
-      })();
+      // Open chat modal with this user
+      openChatModal(userId, username);
     }
-
-    function passProfile(id) {
+    
+    // Ignore a profile - dismisses without notification
+    function ignoreProfile(id) {
       const el = document.getElementById('profile-' + id);
       if (el) {
         el.style.transition = 'opacity 0.3s, transform 0.3s';
@@ -1445,8 +1454,162 @@ prime time 🌙✨</p>
       }
       const demo = demoProfiles.find(p => p.id === id);
       if (demo) {
-        showToast('✕ Passed on ' + demo.name + '. More night owls await!');
+        showToast('✕ ' + demo.name + ' hidden. Keep exploring!');
       }
+      // Store ignored user ID in localStorage to prevent re-showing
+      let ignored = JSON.parse(localStorage.getItem('ignored_profiles') || '[]');
+      if (!ignored.includes(id)) {
+        ignored.push(id);
+        localStorage.setItem('ignored_profiles', JSON.stringify(ignored));
+      }
+    }
+
+    // Open chat modal for direct messaging
+    function openChatModal(userId, username) {
+      // Create or show chat modal
+      let chatModal = document.getElementById('dm-chat-modal');
+      if (!chatModal) {
+        document.body.insertAdjacentHTML('beforeend', `
+          <div id="dm-chat-modal" class="modal-overlay" style="align-items: flex-end; justify-content: flex-end; padding: 20px;">
+            <div class="modal-box" style="max-width: 400px; width: 100%; max-height: 80vh; display: flex; flex-direction: column;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FFEB43; padding-bottom: 10px; margin-bottom: 10px;">
+                <h2 id="dm-chat-title" style="margin: 0; color: #FFEB43;">Chat</h2>
+                <button class="modal-close" onclick="closeChatModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">×</button>
+              </div>
+              <div id="dm-messages" style="flex: 1; overflow-y: auto; min-height: 200px; max-height: 400px; padding: 10px; background: #0a0a15; border-radius: 8px; margin-bottom: 10px;"></div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="dm-input" placeholder="Type a message..." style="flex: 1; padding: 10px; border: 2px solid #FFEB43; border-radius: 20px; background: rgba(255,255,255,0.1); color: white;" />
+                <button onclick="sendDmMessage()" style="background: #FFEB43; color: #003594; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold;">Send</button>
+              </div>
+            </div>
+          </div>
+        `);
+        chatModal = document.getElementById('dm-chat-modal');
+      }
+      document.getElementById('dm-chat-title').textContent = 'Chat with ' + username;
+      chatModal.dataset.userId = userId;
+      chatModal.dataset.username = username;
+      chatModal.classList.add('open');
+      
+      // Load existing messages
+      loadDmMessages(userId);
+      
+      // Handle Enter key
+      document.getElementById('dm-input').onkeypress = function(e) {
+        if (e.key === 'Enter') sendDmMessage();
+      };
+    }
+    
+    function closeChatModal() {
+      const modal = document.getElementById('dm-chat-modal');
+      if (modal) modal.classList.remove('open');
+    }
+    
+    async function loadDmMessages(userId) {
+      try {
+        const res = await fetch('/api/messages/' + userId);
+        const data = await res.json();
+        const container = document.getElementById('dm-messages');
+        if (!container) return;
+        
+        if (!data.messages || data.messages.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: #888; padding: 40px;">Start the conversation! 💬</div>';
+        } else {
+          container.innerHTML = data.messages.map(m => {
+            const isMe = m.sender_id == currentUserId;
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            return `<div style="margin-bottom: 10px; text-align: ${isMe ? 'right' : 'left'};">
+              <span style="display: inline-block; padding: 8px 12px; border-radius: 15px; background: ${isMe ? '#0D6826' : '#003594'}; max-width: 80%; word-wrap: break-word;">
+                ${escapeHtml(m.message)}
+              </span>
+              <div style="font-size: 0.7rem; color: #888; margin-top: 2px;">${time}</div>
+            </div>`;
+          }).join('');
+          container.scrollTop = container.scrollHeight;
+        }
+      } catch (e) {
+        document.getElementById('dm-messages').innerHTML = '<div style="color: #EE2737; text-align: center;">Failed to load messages</div>';
+      }
+    }
+    
+    async function sendDmMessage() {
+      const input = document.getElementById('dm-input');
+      const message = input.value.trim();
+      if (!message) return;
+      
+      const modal = document.getElementById('dm-chat-modal');
+      const userId = modal.dataset.userId;
+      
+      try {
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+        
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({ receiver_id: userId, message }),
+        });
+        
+        if (res.ok) {
+          input.value = '';
+          loadDmMessages(userId);
+        } else {
+          const data = await res.json();
+          showToast('❌ ' + (data.error || 'Failed to send message'));
+        }
+      } catch (e) {
+        showToast('❌ Error sending message');
+      }
+    }
+
+    // ── Content Filter for Chat ───────────────────────────────────────────────
+    
+    // Profanity filter - replaces swear words with symbols
+    const PROFANITY_LIST = [
+      /\bf+u+c+k/i, /\bs+h+i+t/i, /\ba+s+s+h+o+l+e/i, /\bd+a+m+n/i,
+      /\bb+i+t+c+h/i, /\bc+u+n+t/i, /\w+h+o+r+e/i, /\m+u+f+f+/i,
+      /\bp+i+s+s/i, /\bf+a+r+t/i, /\bs+h+a+g+/i, /\bd+i+c+k/i,
+      /\bp+e+n+i+s/i, /\bv+a+g+i+n+a/i, /\bn+i+g+g+/i, /\bf+a+g+/i,
+      /\bs+l+u+t/i, /\bs+k+a+n+k/i, /\tt+i+t+/i, /\bb+r+e+a+s+t+s/i
+    ];
+    
+    // Spam detection patterns
+    const SPAM_PATTERNS = [
+      /https?:\/\/[^\s]+/gi,  // URLs
+      /(.)\1{5,}/gi,           // Repeated characters (e.g., "aaaaaa")
+      /^[\s\d\W]+$/,           // Only numbers and symbols
+      /(.{0,3})\1{4,}/i,       // Repeated short patterns
+    ];
+    
+    function filterMessage(text) {
+      let filtered = text;
+      
+      // Replace profanity with asterisks
+      PROFANITY_LIST.forEach(pattern => {
+        filtered = filtered.replace(pattern, match => '*'.repeat(match.length));
+      });
+      
+      return filtered;
+    }
+    
+    function isSpam(text) {
+      // Check for excessive URLs
+      const urlCount = (text.match(/https?:\/\/[^\s]+/gi) || []).length;
+      if (urlCount > 0) return true;
+      
+      // Check for repeated characters
+      if (/(.)\1{5,}/i.test(text)) return true;
+      
+      // Check for nonsense (mostly numbers/symbols)
+      if (/^[\s\d\W]+$/.test(text) && text.length > 5) return true;
+      
+      // Check for very short repeated patterns
+      if (/(.{0,3})\1{4,}/i.test(text)) return true;
+      
+      return false;
     }
 
     async function sendChat() {
@@ -1457,6 +1620,21 @@ prime time 🌙✨</p>
         showToast('🌙 Sign up to post!');
         return;
       }
+      
+      // Apply content filter
+      let filteredMessage = filterMessage(message);
+      
+      // Check for spam
+      if (isSpam(message)) {
+        showToast('⚠️ Message flagged as spam. Please be friendly!');
+        return;
+      }
+      
+      // If message was filtered, warn user
+      if (filteredMessage !== message) {
+        showToast('💬 Message posted (filtered for appropriateness)');
+      }
+      
       try {
         const csrfRes = await fetch('/api/csrf-token');
         const { csrfToken } = await csrfRes.json();
@@ -1468,7 +1646,7 @@ prime time 🌙✨</p>
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message: filteredMessage }),
         });
         const data = await res.json();
         if (data.success) {
@@ -1481,6 +1659,13 @@ prime time 🌙✨</p>
       } catch (e) {
         showToast('❌ Error posting');
       }
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     async function loadTicker() {
@@ -1495,13 +1680,13 @@ prime time 🌙✨</p>
           if (!data.ticker || data.ticker.length === 0) {
             feed.innerHTML = dots + '<div style="text-align:center;padding:20px;color:#555;font-style:italic;">💬 Be the first to say something!</div>';
           } else {
-            // Reverse: newest at bottom
-          const msgs = data.ticker.slice(0, 4).reverse();
-          feed.innerHTML = dots + msgs.map(m => {
+            // Show newest 5 messages at bottom
+            const msgs = data.ticker.slice(0, 5).reverse();
+            feed.innerHTML = dots + msgs.map(m => {
               const time = new Date(m.created_at);
               const ago = Math.floor((now - time) / 60000);
               const timeStr = ago < 1 ? 'just now' : ago + 'm ago';
-              return '<div style="padding:10px 0;border-bottom:1px solid #333;animation:fadeIn 0.3s ease;"><strong style="color:#FFEB43;">@' + m.username + '</strong> <span style="color:#666;font-size:0.75em;">' + timeStr + '</span><div style="color:#ddd;margin-top:4px;font-size:0.95em;">' + m.message + '</div></div>';
+              return '<div style="padding:8px 0;border-bottom:1px solid #333;animation:fadeIn 0.3s ease;"><strong style="color:#FFEB43;">@' + escapeHtml(m.username) + '</strong> <span style="color:#666;font-size:0.75em;">' + timeStr + '</span><div style="color:#ddd;margin-top:4px;font-size:0.95em;">' + escapeHtml(m.message) + '</div></div>';
             }).join('');
           }
         }
