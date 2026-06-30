@@ -425,18 +425,17 @@ z-index: 2; }
     }
     .my-profile-btn:hover { transform: scale(1.08); background: #7d3c98; box-shadow: 0 0 12px rgba(255, 235, 67, 0.5); }
    
-    #chat-bar {
+    #bottom-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
+      z-index: 10;
+    }
+    #chat-bar {
       background: #003594;
       border-top: 3px solid #FFEB43;
       padding: 0.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      z-index: 10;
     }
     #chat-input-wrapper {
       display: flex;
@@ -826,7 +825,6 @@ z-index: 2; }
 
     /* ── Footer ── */
     .site-footer {
-      position: static;
       background: linear-gradient(135deg, rgba(0,30,90,0.98), rgba(13,54,146,0.98));
       border-top: 2px solid #FFEB43;
       padding: 0.6rem 1rem;
@@ -1100,13 +1098,25 @@ prime time 🌙✨</p>
     </aside>
   </div>
 
-  <div id="ticker-feed"></div>
-  
-  <div id="chat-bar">
-    <div id="chat-input-wrapper">
-      <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
-      <button id="chat-send" onclick="sendChat()">Send</button>
+  <div id="bottom-bar">
+    <div id="ticker-feed"></div>
+    <div id="chat-bar">
+      <div id="chat-input-wrapper">
+        <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
+        <button id="chat-send" onclick="sendChat()">Send</button>
+      </div>
     </div>
+    <footer class="site-footer">
+      <span>© 2026 Central Alberta After Dark. All rights reserved.</span>
+      <span class="footer-separator">|</span>
+      <a href="/privacy.html">Privacy Policy</a>
+      <span class="footer-separator">|</span>
+      <a href="/terms.html">Terms of Service</a>
+      <span class="footer-separator">|</span>
+      <a href="/accessibility.html">Accessibility</a>
+      <span class="footer-separator">|</span>
+      <a href="/contact.html">Contact Us</a>
+    </footer>
   </div>
 
   <script src="/client.js"></script>
