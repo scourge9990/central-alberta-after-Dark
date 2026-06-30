@@ -74,6 +74,15 @@ transparent 75%);
       max-width: 600px;
     }
    
+    .header-maintenance-notice {
+      position: absolute;
+      top: 8px;
+      left: 15px;
+      font-size: 0.7rem;
+      color: rgba(255, 235, 67, 0.7);
+      font-family: Arial, sans-serif;
+      z-index: 3;
+    }
     header h1 {
       margin: 0;
       font-family: 'Impact', 'Arial Black', sans-serif;
@@ -365,7 +374,7 @@ z-index: 2; }
    
     .buttons {
       display: flex;
-      gap: 0.8rem;
+      gap: 1rem;
       flex-shrink: 0;
       justify-content: center;
       align-items: center;
@@ -374,38 +383,47 @@ z-index: 2; }
     .buttons > * {
       margin-top: 4px;
     }
-    .like-btn {
+    .chat-btn {
       background: #0D6826;
       color: #fff;
       border: 2px solid #FFEB43;
       font-family: Arial, sans-serif;
       font-weight: bold;
-    }
-    .pass-btn {
-      background: #EE2737;
-      color: #fff;
-      border: 2px solid #FFEB43;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
-    }
-    .like-btn, .pass-btn {
       padding: 0.8rem 1.5rem;
       border-radius: 25px;
       font-size: 1rem;
       cursor: pointer;
       transition: all 0.2s;
+      min-width: 110px;
     }
-    .like-btn:hover { transform: scale(1.05); background: #158f38; }
-    .pass-btn:hover { transform: scale(1.05); background: #ff4444; }
+    .ignore-btn {
+      background: #6b7280;
+      color: #fff;
+      border: 2px solid #FFEB43;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 110px;
+    }
+    .chat-btn:hover { transform: scale(1.08); background: #158f38; box-shadow: 0 0 12px rgba(255, 235, 67, 0.5); }
+    .ignore-btn:hover { transform: scale(1.08); background: #4b5563; box-shadow: 0 0 12px rgba(255, 235, 67, 0.5); }
+    .my-profile-btn {
       background: linear-gradient(135deg, #9b59b6, #8e44ad);
       color: #fff;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 4px;
+      border: 2px solid #FFEB43;
+      transition: all 0.2s;
+      min-width: 110px;
     }
+    .my-profile-btn:hover { transform: scale(1.08); background: #7d3c98; box-shadow: 0 0 12px rgba(255, 235, 67, 0.5); }
     .like-btn:disabled { background: #666; opacity: 0.5; cursor: not-allowed; }
    
     #chat-bar {
@@ -417,8 +435,17 @@ z-index: 2; }
       border-top: 3px solid #FFEB43;
       padding: 0.8rem;
       display: flex;
+      flex-direction: column;
       gap: 0.5rem;
       z-index: 10;
+    }
+    #ticker-feed {
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #0a0a15;
+      border-bottom: 2px solid #FFEB43;
+      font-size: 0.85em;
     }
     #chat-input {
       flex: 1;
@@ -961,6 +988,7 @@ onclick="switchModal('signup-modal','login-modal')">Log In</a>
   </div>
 
   <header>
+    <span class="header-maintenance-notice">Site maintenance occurs every other Monday.</span>
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag">
    
     <div class="title-group">
