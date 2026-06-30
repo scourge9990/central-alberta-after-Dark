@@ -1622,18 +1622,10 @@ prime time 🌙✨</p>
         return;
       }
       
-      // Apply content filter
-      let filteredMessage = filterMessage(message);
-      
       // Check for spam
       if (isSpam(message)) {
         showToast('⚠️ Message flagged as spam. Please be friendly!');
         return;
-      }
-      
-      // If message was filtered, warn user
-      if (filteredMessage !== message) {
-        showToast('💬 Message posted (filtered for appropriateness)');
       }
       
       try {
@@ -1647,7 +1639,7 @@ prime time 🌙✨</p>
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
           },
-          body: JSON.stringify({ message: filteredMessage }),
+          body: JSON.stringify({ message }),
         });
         const data = await res.json();
         if (data.success) {
