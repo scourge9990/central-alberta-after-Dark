@@ -1576,38 +1576,23 @@ prime time 🌙✨</p>
       /\bs+l+u+t/i, /\bs+k+a+n+k/i, /\tt+i+t+/i, /\bb+r+e+a+s+t+s/i
     ];
     
-    // Spam detection patterns
-    const SPAM_PATTERNS = [
-      /https?:\/\/[^\s]+/gi,  // URLs
-      /(.)\1{5,}/gi,           // Repeated characters (e.g., "aaaaaa")
-      /^[\s\d\W]+$/,           // Only numbers and symbols
-      /(.{0,3})\1{4,}/i,       // Repeated short patterns
-    ];
-    
-    function filterMessage(text) {
-      let filtered = text;
-      
-      // Replace profanity with asterisks
-      PROFANITY_LIST.forEach(pattern => {
-        filtered = filtered.replace(pattern, match => '*'.repeat(match.length));
-      });
-      
-      return filtered;
-    }
-    
+    // Spam detection patterns - only catch obvious spam
     function isSpam(text) {
-      // Check for excessive URLs
+      // Check for URLs (link spam)
       const urlCount = (text.match(/https?:\/\/[^\s]+/gi) || []).length;
       if (urlCount > 0) return true;
       
-      // Check for repeated characters
-      if (/(.)\1{5,}/i.test(text)) return true;
+      // Check for excessive repeated characters (e.g., "aaaaaaa" or "!!!!!!")
+      if (/(.)\1{6,}/i.test(text)) return true;
       
-      // Check for nonsense (mostly numbers/symbols)
-      if (/^[\s\d\W]+$/.test(text) && text.length > 5) return true;
+      // Check for gibberish (only numbers/symbols, no real words)
+      // Must have at least some letters to be considered valid
+      if (!/[a-zA-Z]/.test(text) && text.length > 3) return true;
       
-      // Check for very short repeated patterns
-      if (/(.{0,3})\1{4,}/i.test(text)) return true;
+      // Check for excessive caps (all caps very long text)
+      const letters = text.match(/[a-zA-Z]/g) || [];
+      const caps = text.match(/[A-Z]/g) || [];
+      if (letters.length > 10 && caps.length / letters.length > 0.8 && text.length > 20) return true;
       
       return false;
     }
