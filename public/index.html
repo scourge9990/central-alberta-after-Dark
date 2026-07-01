@@ -1123,7 +1123,6 @@ prime time 🌙✨</p>
     let currentFilter = 'all';
     let currentUser = null;
     let currentUserId = null;
-    let myCardRendered = false; // Track if MY card has been rendered
 
     // ── Demo Profiles ──────────────────────────────────────────────────────
     const demoProfiles = []; // Loaded from API
@@ -1212,27 +1211,16 @@ prime time 🌙✨</p>
         const data = await res.json();
         if (res.ok && data.success) {
           closeModal('login-modal');
-          currentUser = { 
-            username: data.username, 
-            isPremium: data.is_premium, 
-            id: data.id,
-            isOnline: true,
-            lastActive: new Date().toISOString()
-          };
+          currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
           currentUserId = data.id;
           setAuthUI(currentUser);
           updatePremiumButton();
-          // IMMEDIATELY show MY card with green light before server response
-          renderMyCardInstant(true);
-          // Then update with full data (age, bio, location)
-          fetchAndUpdateMyCard();
           // Check for new likes while away
           if (data.newLikesMessage) {
             showToast(data.newLikesMessage);
           } else {
             showToast('🌙 Welcome back, ' + data.username + '!');
           }
-          // Reload other profiles
           loadProfiles();
         } else {
           msg.className = 'modal-msg error';
@@ -1297,127 +1285,20 @@ prime time 🌙✨</p>
 
     // ── Logout ─────────────────────────────────────────────────────────────
     async function handleLogout() {
-      // IMMEDIATELY remove MY card and turn off green light before server response
+      // Immediately remove MY card
       const myCard = document.querySelector('.my-profile-card');
       if (myCard) myCard.remove();
-      currentUser = null;
-      currentUserId = null;
-      myCardRendered = false;
-      setAuthUI(null);
-      updatePremiumButton();
-      showToast('👋 Logged out. Night owl signing off!');
       try {
         await fetch('/api/logout', { method: 'POST' });
       } catch (e) {
         console.error('Logout fetch failed:', e);
       }
-    }
-
-    // ── Instant MY Card Rendering ─────────────────────────────────────────
-    function renderMyCardInstant(isOnline) {
-      const container = document.getElementById('profiles-container');
-      // Remove existing MY card
-      const existing = container.querySelector('.my-profile-card');
-      if (existing) existing.remove();
-      // Add MY card at top with green light
-      const card = document.createElement('div');
-      card.className = 'profile-row my-profile-card';
-      card.style.cssText = 'border:2px solid #FFEB43;';
-      card.innerHTML = `
-        <img class="thumbnail" src="https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(currentUser.username)}&t=${Date.now()}" alt="${currentUser.username}" />
-        <div class="info">
-          <div class="name-age">${currentUser.username}
-            <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;"></span>
-            <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
-          </div>
-          <div class="status-lights">
-            <span>
-              <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
-              ${isOnline ? 'Online now' : 'Offline'}
-            </span>
-          </div>
-        </div>
-        <div class="buttons">
-          <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
-        </div>
-      `;
-      container.insertAdjacentElement('afterBegin', card);
-      myCardRendered = true;
-    }
-
-    // ── Fetch and Update MY Card (doesn't clear container) ───────────────
-    async function fetchAndUpdateMyCard() {
-      if (!currentUser) return;
-      try {
-        const meRes = await fetch('/api/me');
-        if (!meRes.ok) return;
-        const myData = await meRes.json();
-        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
-        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
-        
-        // Update existing MY card
-        const myCard = document.querySelector('.my-profile-card');
-        if (myCard) {
-          myCard.innerHTML = `
-            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
-            <div class="info">
-              <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
-                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;" title="${isOnline ? 'Online now' : 'Offline'}"></span>
-                <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
-              </div>
-              <div class="status-lights">
-                <span>
-                  <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
-                  ${isOnline ? 'Online now' : 'Offline'}
-                </span>
-              </div>
-              ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
-              ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
-            </div>
-            <div class="buttons">
-              <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
-            </div>
-          `;
-        }
-      } catch (_) {}
-    }
-
-    // ── Fetch and Render MY Card (creates new card) ─────────────────────
-    async function fetchAndRenderMyCard() {
-      if (!currentUser) return;
-      try {
-        const meRes = await fetch('/api/me');
-        if (!meRes.ok) return;
-        const myData = await meRes.json();
-        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
-        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
-        
-        const container = document.getElementById('profiles-container');
-        const card = document.createElement('div');
-        card.className = 'profile-row my-profile-card';
-        card.style.cssText = 'border:2px solid #FFEB43;';
-        card.innerHTML = `
-          <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
-          <div class="info">
-            <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
-              <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;"></span>
-              <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
-            </div>
-            <div class="status-lights">
-              <span>
-                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
-                ${isOnline ? 'Online now' : 'Offline'}
-              </span>
-            </div>
-            ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
-            ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
-          </div>
-          <div class="buttons">
-            <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
-          </div>
-        `;
-        container.insertAdjacentElement('afterBegin', card);
-      } catch (_) {}
+      currentUser = null;
+      currentUserId = null;
+      setAuthUI(null);
+      updatePremiumButton();
+      showToast('👋 Logged out. Night owl signing off!');
+      loadProfiles();
     }
 
     // ── Profiles ───────────────────────────────────────────────────────────
@@ -1471,15 +1352,9 @@ prime time 🌙✨</p>
     }
 
     async function loadProfiles() {
+      // Clear container first to prevent duplicate content
       const container = document.getElementById('profiles-container');
-      if (!container) return;
-      
-      // Save MY card if exists
-      const myCard = container.querySelector('.my-profile-card');
-      const myCardHtml = myCard ? myCard.outerHTML : '';
-      
-      // Clear container
-      container.innerHTML = '';
+      if (container) container.innerHTML = '';
 
       // Helper to safely extract photo URL
       function getPhotoUrl(photos, username) {
@@ -1512,15 +1387,34 @@ prime time 🌙✨</p>
       // Always render demo profiles first so visitors see content immediately.
       renderProfiles();
 
-      // Restore MY card if user is logged in
+      // Fetch current user's full profile data first
+      let myData = null;
       if (currentUser) {
-        if (myCardRendered && myCardHtml) {
-          // MY card already rendered by login - restore from DOM
-          container.insertAdjacentHTML('afterBegin', myCardHtml);
-        } else if (!myCardRendered) {
-          // First load with session - fetch and render
-          fetchAndRenderMyCard();
-        }
+        try {
+          const meRes = await fetch('/api/me');
+          if (meRes.ok) myData = await meRes.json();
+        } catch (_) {}
+      }
+      if (myData) {
+        const container = document.getElementById('profiles-container');
+        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
+        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
+        container.insertAdjacentHTML('afterBegin', `
+          <div class="profile-row my-profile-card" style="border:2px solid #FFEB43;">
+            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
+            <div class="info">
+              <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
+                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;" title="${isOnline ? 'Online' : 'Offline'}"></span>
+                <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
+              </div>
+              ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
+              ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
+            </div>
+            <div class="buttons">
+              <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
+            </div>
+          </div>
+        `);
       }
 
       // Then load other profiles from API
