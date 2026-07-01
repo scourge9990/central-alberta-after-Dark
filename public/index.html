@@ -1319,7 +1319,7 @@ prime time 🌙✨</p>
       }
 
       // Only preserve YOUR card if user is logged in
-      const myCard = document.getElementById('my-profile-card');
+      const myCard = document.querySelector('.my-profile-card');
       const myCardHtml = (myCard && currentUser) ? myCard.outerHTML : '';
       container.innerHTML = myCardHtml + filtered.map(p => `
         <div class="profile-row" id="profile-${p.id}">
@@ -1396,7 +1396,7 @@ prime time 🌙✨</p>
         const container = document.getElementById('profiles-container');
         const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
         container.insertAdjacentHTML('afterBegin', `
-          <div class="profile-row my-profile-card" id="my-profile-card" style="border:2px solid #FFEB43;">
+          <div class="profile-row my-profile-card" style="border:2px solid #FFEB43;">
             <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
             <div class="info">
               <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
