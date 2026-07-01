@@ -1469,8 +1469,8 @@ prime time 🌙✨</p>
       // Always render demo profiles first so visitors see content immediately.
       renderProfiles();
 
-      // Restore MY card if exists (from instant render)
-      if (myCardHtml) {
+      // Restore MY card ONLY if user is logged in
+      if (myCardHtml && currentUser) {
         container.insertAdjacentHTML('afterBegin', myCardHtml);
       }
 
