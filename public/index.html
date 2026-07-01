@@ -1150,8 +1150,11 @@ prime time 🌙✨</p>
     }
 
     // ── Auth state ─────────────────────────────────────────────────────────
-    function setAuthUI(username) {
-      currentUser = username;
+    function setAuthUI(userOrUsername) {
+      // Accept either a user object {username, isPremium, id} or just a username string
+      const username = typeof userOrUsername === 'string' ? userOrUsername : (userOrUsername?.username || null);
+      const isPremium = typeof userOrUsername === 'object' ? userOrUsername?.isPremium : null;
+      currentUser = userOrUsername;
       if (username) lastNotificationTime = null; // Reset on login
       document.getElementById('header-login-btn').style.display = username ? 'none' : '';
       document.getElementById('header-signup-btn').style.display = username ? 'none' : '';
@@ -1168,7 +1171,7 @@ prime time 🌙✨</p>
           const data = await res.json();
           currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
           currentUserId = data.id;
-          setAuthUI(data.username);
+          setAuthUI(currentUser);
           updatePremiumButton();
         }
       } catch (_) {}
@@ -1210,7 +1213,7 @@ prime time 🌙✨</p>
           closeModal('login-modal');
           currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
           currentUserId = data.id;
-          setAuthUI(data.username);
+          setAuthUI(currentUser);
           updatePremiumButton();
           // Check for new likes while away
           if (data.newLikesMessage) {
