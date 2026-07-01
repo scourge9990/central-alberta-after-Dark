@@ -1287,7 +1287,9 @@ prime time 🌙✨</p>
     async function handleLogout() {
       try {
         await fetch('/api/logout', { method: 'POST' });
-      } catch (_) {}
+      } catch (e) {
+        console.error('Logout fetch failed:', e);
+      }
       currentUser = null;
       currentUserId = null;
       setAuthUI(null);
@@ -1313,11 +1315,13 @@ prime time 🌙✨</p>
       }
 
       if (!filtered.length) {
-        // Don't show empty state - user's own profile is already shown
         return;
       }
 
-      container.innerHTML = filtered.map(p => `
+      // Only preserve YOUR card if user is logged in
+      const myCard = document.getElementById('my-profile-card');
+      const myCardHtml = (myCard && currentUser) ? myCard.outerHTML : '';
+      container.innerHTML = myCardHtml + filtered.map(p => `
         <div class="profile-row" id="profile-${p.id}">
           <img class="thumbnail" src="${p.image}?t=${Date.now()}" alt="${p.name}" />
           <div class="info">
@@ -1391,8 +1395,8 @@ prime time 🌙✨</p>
       if (myData) {
         const container = document.getElementById('profiles-container');
         const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
-        container.insertAdjacentHTML('beforeend', `
-          <div class="profile-row" style="border:2px solid #FFEB43;">
+        container.insertAdjacentHTML('afterBegin', `
+          <div class="profile-row my-profile-card" id="my-profile-card" style="border:2px solid #FFEB43;">
             <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
             <div class="info">
               <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
