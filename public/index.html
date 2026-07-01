@@ -1345,6 +1345,10 @@ prime time 🌙✨</p>
     }
 
     async function loadProfiles() {
+      // Clear container first to prevent duplicate content
+      const container = document.getElementById('profiles-container');
+      if (container) container.innerHTML = '';
+
       // Helper to safely extract photo URL
       function getPhotoUrl(photos, username) {
         const fallback = 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(username);
