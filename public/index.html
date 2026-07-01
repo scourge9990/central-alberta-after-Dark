@@ -1386,12 +1386,12 @@ prime time 🌙✨</p>
       }
       if (myData) {
         const container = document.getElementById('profiles-container');
-        const myPhoto = getPhotoUrl(myData.photos, currentUser);
+        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
         container.insertAdjacentHTML('beforeend', `
           <div class="profile-row" style="border:2px solid #FFEB43;">
-            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser}" />
+            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
             <div class="info">
-              <div class="name-age">${currentUser}${myData.age ? ', ' + myData.age : ''}
+              <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
                 <span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="You"></span>
                 <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
               </div>
