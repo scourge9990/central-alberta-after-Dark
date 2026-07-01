@@ -1211,7 +1211,13 @@ prime time 🌙✨</p>
         const data = await res.json();
         if (res.ok && data.success) {
           closeModal('login-modal');
-          currentUser = { username: data.username, isPremium: data.is_premium, id: data.id };
+          currentUser = { 
+            username: data.username, 
+            isPremium: data.is_premium, 
+            id: data.id,
+            isOnline: data.is_online === true,
+            lastActive: data.last_active
+          };
           currentUserId = data.id;
           setAuthUI(currentUser);
           updatePremiumButton();
@@ -1395,13 +1401,21 @@ prime time 🌙✨</p>
       if (myData) {
         const container = document.getElementById('profiles-container');
         const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
+        // Determine if user is online (active in last 5 minutes)
+        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
         container.insertAdjacentHTML('afterBegin', `
           <div class="profile-row my-profile-card" style="border:2px solid #FFEB43;">
             <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
             <div class="info">
               <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
-                <span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="You"></span>
+                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;" title="${isOnline ? 'Online now' : 'Offline'}"></span>
                 <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
+              </div>
+              <div class="status-lights">
+                <span>
+                  <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
+                  ${isOnline ? 'Online now' : 'Offline'}
+                </span>
               </div>
               ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
               ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}

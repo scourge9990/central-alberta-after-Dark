@@ -817,11 +817,19 @@ app.post('/api/login', csrfProtection, [
               res.json({ 
                 success: true, 
                 username: user.username,
-                is_premium: user.is_premium 
+                is_premium: user.is_premium,
+                last_active: new Date().toISOString(),
+                is_online: true
               });
             } else {
               console.log('[LOGIN] Success! Logging in user:', user.username);
-              res.json({ success: true, username: user.username, is_premium: user.is_premium });
+              res.json({ 
+                success: true, 
+                username: user.username, 
+                is_premium: user.is_premium,
+                last_active: new Date().toISOString(),
+                is_online: true
+              });
             }
           });
         });
@@ -921,7 +929,7 @@ app.get('/api/stripe-config', (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
-    `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.created_at,
+    `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.created_at, u.last_active,
             p.interests, p.looking_for, p.photos
      FROM users u
      LEFT JOIN profiles p ON u.id = p.user_id
@@ -1361,7 +1369,7 @@ app.get('/api/notifications', requireAuth, (req, res) => {
   const since = req.query.since || '1970-01-01';
   
   db.all(
-    `SELECT l.id, l.created_at as time, u.id as liker_id, u.username, u.age, u.photos
+    `SELECT l.id, l.created_at as time, u.id as liker_id, u.username, u.age
       FROM likes l 
       JOIN users u ON l.liker_id = u.id
       WHERE l.liked_id = ? AND l.created_at > ?
