@@ -1229,7 +1229,8 @@ prime time 🌙✨</p>
           } else {
             showToast('🌙 Welcome back, ' + data.username + '!');
           }
-          loadProfiles();
+          // Now fetch MY data and update card with real data (doesn't clear container)
+          fetchAndUpdateMyCard();
         } else {
           msg.className = 'modal-msg error';
           msg.textContent = data.error || 'Login failed.';
@@ -1339,6 +1340,43 @@ prime time 🌙✨</p>
       container.insertAdjacentElement('afterBegin', card);
     }
 
+    // ── Fetch and Update MY Card (doesn't clear container) ───────────────
+    async function fetchAndUpdateMyCard() {
+      if (!currentUser) return;
+      try {
+        const meRes = await fetch('/api/me');
+        if (!meRes.ok) return;
+        const myData = await meRes.json();
+        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
+        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
+        
+        // Update existing MY card
+        const myCard = document.querySelector('.my-profile-card');
+        if (myCard) {
+          myCard.innerHTML = `
+            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
+            <div class="info">
+              <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
+                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;" title="${isOnline ? 'Online now' : 'Offline'}"></span>
+                <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
+              </div>
+              <div class="status-lights">
+                <span>
+                  <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
+                  ${isOnline ? 'Online now' : 'Offline'}
+                </span>
+              </div>
+              ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
+              ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
+            </div>
+            <div class="buttons">
+              <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
+            </div>
+          `;
+        }
+      } catch (_) {}
+    }
+
     // ── Profiles ───────────────────────────────────────────────────────────
     function setFilter(f) {
       currentFilter = f;
@@ -1390,9 +1428,15 @@ prime time 🌙✨</p>
     }
 
     async function loadProfiles() {
-      // Clear container first to prevent duplicate content
       const container = document.getElementById('profiles-container');
-      if (container) container.innerHTML = '';
+      if (!container) return;
+      
+      // Save MY card if exists
+      const myCard = container.querySelector('.my-profile-card');
+      const myCardHtml = myCard ? myCard.outerHTML : '';
+      
+      // Clear container
+      container.innerHTML = '';
 
       // Helper to safely extract photo URL
       function getPhotoUrl(photos, username) {
@@ -1425,41 +1469,9 @@ prime time 🌙✨</p>
       // Always render demo profiles first so visitors see content immediately.
       renderProfiles();
 
-      // Fetch current user's full profile data first
-      let myData = null;
-      if (currentUser) {
-        try {
-          const meRes = await fetch('/api/me');
-          if (meRes.ok) myData = await meRes.json();
-        } catch (_) {}
-      }
-      if (myData) {
-        const container = document.getElementById('profiles-container');
-        const myPhoto = getPhotoUrl(myData.photos, currentUser.username);
-        // Determine if user is online (active in last 5 minutes)
-        const isOnline = myData.last_active && new Date(myData.last_active) > new Date(Date.now() - 5 * 60 * 1000);
-        container.insertAdjacentHTML('afterBegin', `
-          <div class="profile-row my-profile-card" style="border:2px solid #FFEB43;">
-            <img class="thumbnail" src="${myPhoto}?t=${Date.now()}" alt="${currentUser.username}" />
-            <div class="info">
-              <div class="name-age">${currentUser.username}${myData.age ? ', ' + myData.age : ''}
-                <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;" title="${isOnline ? 'Online now' : 'Offline'}"></span>
-                <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
-              </div>
-              <div class="status-lights">
-                <span>
-                  <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
-                  ${isOnline ? 'Online now' : 'Offline'}
-                </span>
-              </div>
-              ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
-              ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
-            </div>
-            <div class="buttons">
-              <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
-            </div>
-          </div>
-        `);
+      // Restore MY card if exists (from instant render)
+      if (myCardHtml) {
+        container.insertAdjacentHTML('afterBegin', myCardHtml);
       }
 
       // Then load other profiles from API
