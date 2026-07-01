@@ -1215,12 +1215,14 @@ prime time 🌙✨</p>
             username: data.username, 
             isPremium: data.is_premium, 
             id: data.id,
-            isOnline: data.is_online === true,
-            lastActive: data.last_active
+            isOnline: true,
+            lastActive: new Date().toISOString()
           };
           currentUserId = data.id;
           setAuthUI(currentUser);
           updatePremiumButton();
+          // IMMEDIATELY show MY card with green light before server response
+          renderMyCardInstant(true);
           // Check for new likes while away
           if (data.newLikesMessage) {
             showToast(data.newLikesMessage);
@@ -1291,17 +1293,50 @@ prime time 🌙✨</p>
 
     // ── Logout ─────────────────────────────────────────────────────────────
     async function handleLogout() {
-      try {
-        await fetch('/api/logout', { method: 'POST' });
-      } catch (e) {
-        console.error('Logout fetch failed:', e);
-      }
+      // IMMEDIATELY remove MY card and turn off green light before server response
+      const myCard = document.querySelector('.my-profile-card');
+      if (myCard) myCard.remove();
       currentUser = null;
       currentUserId = null;
       setAuthUI(null);
       updatePremiumButton();
       showToast('👋 Logged out. Night owl signing off!');
-      loadProfiles();
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+      } catch (e) {
+        console.error('Logout fetch failed:', e);
+      }
+    }
+
+    // ── Instant MY Card Rendering ─────────────────────────────────────────
+    function renderMyCardInstant(isOnline) {
+      const container = document.getElementById('profiles-container');
+      // Remove existing MY card
+      const existing = container.querySelector('.my-profile-card');
+      if (existing) existing.remove();
+      // Add MY card at top with green light
+      const card = document.createElement('div');
+      card.className = 'profile-row my-profile-card';
+      card.style.cssText = 'border:2px solid #FFEB43;';
+      card.innerHTML = `
+        <img class="thumbnail" src="https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(currentUser.username)}&t=${Date.now()}" alt="${currentUser.username}" />
+        <div class="info">
+          <div class="name-age">${currentUser.username}
+            <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-left:8px;vertical-align:middle;"></span>
+            <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
+          </div>
+          <div class="status-lights">
+            <span>
+              <span style="display:inline-block;width:8px;height:8px;background:${isOnline ? '#22c55e' : '#6b7280'};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>
+              ${isOnline ? 'Online now' : 'Offline'}
+            </span>
+          </div>
+        </div>
+        <div class="buttons">
+          <button class="my-profile-btn" onclick="location.href='/settings.html'">My Profile</button>
+        </div>
+      `;
+      container.insertAdjacentElement('afterBegin', card);
     }
 
     // ── Profiles ───────────────────────────────────────────────────────────
